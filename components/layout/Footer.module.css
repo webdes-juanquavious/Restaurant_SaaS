@@ -1,0 +1,195 @@
+/* =========================================================
+   FOOTER COMPONENT STYLES
+   ========================================================= */
+
+.footer {
+    background: var(--bg-footer);
+    border-top: 1px solid var(--border-color);
+    padding: 60px 0 30px;
+    color: var(--text-secondary);
+}
+
+.footerInner {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+    gap: 40px;
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+}
+
+/* Footer Columns */
+.footerCol {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.footerColTitle {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.footerColTitle::after {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 2px;
+    background: var(--color-primary);
+    margin-top: 8px;
+    border-radius: 1px;
+}
+
+/* Restaurant Name Column */
+.restaurantName {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin-bottom: 4px;
+}
+
+.restaurantTagline {
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.restaurantDesc {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+}
+
+/* Links & Items */
+.footerLink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color var(--transition-fast);
+    padding: 4px 0;
+}
+
+.footerLink:hover {
+    color: var(--color-primary);
+}
+
+.footerLinkIcon {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.footerText {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+    padding: 4px 0;
+    line-height: 1.5;
+}
+
+.footerTextIcon {
+    font-size: 1rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Social Media */
+.socialLinks {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.socialLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-round);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+}
+
+.socialLink:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--text-on-primary);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Footer Bottom */
+.footerBottom {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 24px var(--container-padding) 0;
+    margin-top: 40px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footerCopyright {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.footerCredits {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .footerInner {
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer {
+        padding: 48px 0 24px;
+    }
+
+    .footerInner {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        text-align: center;
+    }
+
+    .footerColTitle::after {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .socialLinks {
+        justify-content: center;
+    }
+
+    .footerBottom {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+}

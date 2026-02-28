@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventory Funzionalità - Mare Nostrum</title>
+    <style>
+        :root {
+            --bg: #000;
+            --acquired: #2ecc71;
+            --pending: #3498db;
+            --future: #444;
+            --glass: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.1);
+        }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', system-ui, sans-serif; padding: 50px; margin: 0; }
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 50px; }
+        .stat-card { background: var(--glass); border: 1px solid var(--border); padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-val { display: block; font-size: 2rem; font-weight: 800; color: var(--acquired); }
+        
+        .section-title { font-size: 1.4rem; font-weight: 700; margin: 40px 0 20px; border-left: 4px solid var(--acquired); padding-left: 15px; }
+        
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .feature-card { background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; transition: 0.3s; }
+        .feature-card:hover { border-color: var(--acquired); background: rgba(46, 204, 113, 0.05); }
+        .feature-card.pending { border-left: 4px solid var(--pending); }
+        .feature-card.acquired { border-left: 4px solid var(--acquired); }
+        .feature-card.future { opacity: 0.5; grayscale: 100%; }
+
+        .v-tag { position: absolute; top: 15px; right: 15px; font-size: 0.6rem; font-weight: 800; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; color: #888; }
+        .icon { font-size: 1.5rem; margin-bottom: 15px; display: block; }
+        .name { font-weight: 700; font-size: 1rem; margin-bottom: 8px; display: block; }
+        .desc { font-size: 0.8rem; color: #888; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <h1>🛠️ Inventory Funzionalità Acquisite</h1>
+    
+    <div class="summary">
+        <div class="stat-card"><span class="stat-val">28+</span><span>Features Attive</span></div>
+        <div class="stat-card"><span class="stat-val" style="color: var(--pending)">12</span><span>In Sviluppo</span></div>
+        <div class="stat-card"><span class="stat-val" style="color: #666">v4.1</span><span>Current Version</span></div>
+    </div>
+
+    <div class="section-title">CORE & ADMIN (v2-v3)</div>
+    <div class="feature-grid">
+        <div class="feature-card acquired">
+            <span class="v-tag">v2</span><span class="icon">👥</span>
+            <span class="name">HR Management</span>
+            <span class="desc">Gestione completa staff, turni, malattie e storico ore con visualizzazione grafica.</span>
+        </div>
+        <div class="feature-card acquired">
+            <span class="v-tag">v2</span><span class="icon">🪑</span>
+            <span class="name">Smart Floor Plan</span>
+            <span class="desc">Mappa tavoli interattiva con status operativo (Attivo/Sospeso) e link comande.</span>
+        </div>
+        <div class="feature-card acquired">
+            <span class="v-tag">v3</span><span class="icon">📅</span>
+            <span class="name">Smart Booking Engine</span>
+            <span class="desc">Algoritmo di calcolo occupazione locale live con feedback cromatico per l'utente.</span>
+        </div>
+    </div>
+
+    <div class="section-title">AESTHETICS & UX (v4)</div>
+    <div class="feature-grid">
+        <div class="feature-card acquired">
+            <span class="v-tag">v4</span><span class="icon">📊</span>
+            <span class="name">Planner Gantt Sala</span>
+            <span class="desc">Visualizzazione temporale raggruppata per tavolo per il coordinamento delle prenotazioni.</span>
+        </div>
+        <div class="feature-card acquired">
+            <span class="v-tag">v4</span><span class="icon">🍣</span>
+            <span class="name">Signature 3D Carousel</span>
+            <span class="desc">Vetrina piatti d'autore in Home Page con immagini AI e animazioni fluide.</span>
+        </div>
+        <div class="feature-card acquired">
+            <span class="v-tag">v4</span><span class="icon">📍</span>
+            <span class="name">Maps & Ops Integration</span>
+            <span class="desc">Sincronizzazione Google Maps e sistema di override manuale durata prenotazioni per staff.</span>
+        </div>
+    </div>
+
+    <div class="section-title">FUTURE RELEASES (v5+)</div>
+    <div class="feature-grid">
+        <div class="feature-card future">
+            <span class="v-tag">v5</span><span class="icon">☁️</span>
+            <span class="name">Supabase Persistence</span>
+            <span class="desc">Passaggio dal mock-state al database relazionale Postgres con sicurezza RLS.</span>
+        </div>
+        <div class="feature-card future">
+            <span class="v-tag">v7</span><span class="icon">📈</span>
+            <span class="name">BI Automation (n8n)</span>
+            <span class="desc">Export automatici contabili e analisi avanzata dei trend di consumo.</span>
+        </div>
+    </div>
+</body>
+</html>

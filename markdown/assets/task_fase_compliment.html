@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Stato Avanzamento Task - Mare Nostrum</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #161625;
+            --primary: #3498db;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --text: #e0e0e0;
+            --text-muted: #888;
+            --border: rgba(255,255,255,0.08);
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; margin: 0; line-height: 1.6; }
+        .header { margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
+        .phase-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; display: flex; flexDirection: column; transition: transform 0.2s; }
+        .phase-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .phase-header { padding: 20px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .phase-title { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .phase-status { font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: rgba(46, 204, 113, 0.2); color: var(--success); }
+        .phase-status.in-progress { background: rgba(241, 196, 15, 0.2); color: var(--warning); }
+        .phase-content { padding: 20px; flex-grow: 1; }
+        .task-list { list-style: none; padding: 0; margin: 0; }
+        .task-item { margin-bottom: 12px; font-size: 0.9rem; display: flex; align-items: flex-start; gap: 10px; }
+        .task-item.done { color: var(--text-muted); }
+        .check { color: var(--success); font-weight: bold; flexShrink: 0; }
+        .bullet { color: var(--warning); font-weight: bold; flexShrink: 0; }
+        .block-tag { font-size: 0.65rem; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; margin-right: 5px; color: var(--primary); border: 1px solid rgba(52, 152, 219, 0.3); }
+        .progress-container { padding: 0 20px 20px; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); transition: width 0.5s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Project Task Monitor</h1>
+        <p style="color: var(--text-muted)">Visualizzazione analitica dello stato di avanzamento per fase e blocco operativo.</p>
+    </div>
+
+    <div class="grid">
+        <!-- FASE V2 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <span class="phase-title">Fase v2 - Core Mgmt</span>
+                <span class="phase-status">COMPLETATA</span>
+            </div>
+            <div class="phase-content">
+                <ul class="task-list">
+                    <li class="task-item done"><span class="check">✔</span> <strong>Personale:</strong> Popup modifica, 5 ruoli, status malattia e grafici ore.</li>
+                    <li class="task-item done"><span class="check">✔</span> <strong>Tavoli:</strong> Status interattivo, contabilità integrata e calendari giorno/range.</li>
+                    <li class="task-item done"><span class="check">✔</span> <strong>Contabilità:</strong> Dettaglio ordini, grafici ricavi e statistiche aggregate.</li>
+                </ul>
+            </div>
+            <div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width: 100%; background: var(--success)"></div></div></div>
+        </div>
+
+        <!-- FASE 3 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <span class="phase-title">Fase 3 - Infrastructure</span>
+                <span class="phase-status">COMPLETATA</span>
+            </div>
+            <div class="phase-content">
+                <ul class="task-list">
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B1</span> <strong>Header Smart:</strong> Navigazione dinamica per ruolo.</li>
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B2</span> <strong>Smart Booking:</strong> Algoritmo disponibilità e overbooking.</li>
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B5</span> <strong>Menu Gourmet:</strong> Integrazione immagini e categorie.</li>
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B6</span> <strong>UX/UI:</strong> Estetica Premium Glassmorphism.</li>
+                </ul>
+            </div>
+            <div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width: 100%; background: var(--success)"></div></div></div>
+        </div>
+
+        <!-- FASE 4 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <span class="phase-title">Fase 4 - Advanced Ops</span>
+                <span class="phase-status in-progress">IN CORSO (95%)</span>
+            </div>
+            <div class="phase-content">
+                <ul class="task-list">
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B11</span> <strong>Home 3D:</strong> Carousel piatti e ritratto Chef AI.</li>
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B13</span> <strong>Maps/Ops:</strong> Integrazione Google Maps e Override Durata.</li>
+                    <li class="task-item done"><span class="check">✔</span> <span class="block-tag">B14</span> <strong>Planner:</strong> Vista Gantt temporale prenotazioni Sala.</li>
+                    <li class="task-item"><span class="bullet">○</span> <span class="block-tag">B15</span> <strong>Recruiting:</strong> Logica CRUD Offerte lavoro (Finalizzazione).</li>
+                </ul>
+            </div>
+            <div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width: 95%"></div></div></div>
+        </div>
+
+        <!-- FASE 5 -->
+        <div class="phase-card">
+            <div class="phase-header">
+                <span class="phase-title">Fase 5 - Integrations</span>
+                <span class="phase-status in-progress" style="background: rgba(52, 152, 219, 0.1); color: var(--primary)">PIANIFICATA</span>
+            </div>
+            <div class="phase-content">
+                <ul class="task-list">
+                    <li class="task-item"><span class="bullet">○</span> <strong>Supabase:</strong> Migrazione database Postgres e Auth reale.</li>
+                    <li class="task-item"><span class="bullet">○</span> <strong>Git Repo:</strong> Setup CI/CD e versioning professionale.</li>
+                    <li class="task-item"><span class="bullet">○</span> <strong>Calendar:</strong> Sincronizzazione real-time con Google Calendar.</li>
+                </ul>
+            </div>
+            <div class="progress-container"><div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div></div>
+        </div>
+    </div>
+</body>
+</html>

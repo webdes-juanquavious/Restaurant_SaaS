@@ -1,0 +1,319 @@
+/* =========================================================
+   PRENOTA PAGE STYLES
+   ========================================================= */
+
+.prenotaPage {
+    padding: 60px 0 100px;
+}
+
+.prenotaHeader {
+    text-align: center;
+    margin-bottom: 60px;
+    animation: fadeInUp 0.6s ease;
+}
+
+.prenotaHeaderIcon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+/* Form Layout */
+.prenotaContent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+    align-items: flex-start;
+}
+
+.prenotaForm {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    animation: fadeIn 0.6s ease;
+}
+
+.formGroup {
+    margin-bottom: 24px;
+}
+
+.formLabel {
+    display: block;
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.formInput,
+.formSelect {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.formInput:focus,
+.formSelect:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+    outline: none;
+}
+
+.formRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.formError {
+    color: var(--color-error);
+    font-size: 0.82rem;
+    margin-top: 6px;
+}
+
+.formSubmit {
+    margin-top: 8px;
+    width: 100%;
+}
+
+/* Contact Method Tabs */
+.contactTabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.contactTab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    border: none;
+}
+
+.contactTab:hover {
+    color: var(--text-primary);
+}
+
+.contactTabActive {
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+}
+
+/* ============================
+   Time Slots Grid & Legends
+============================ */
+.legendBar {
+    display: flex;
+    justify-content: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dotLow, .dotMedium, .dotHigh {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+}
+.dotLow { background: var(--color-success); }
+.dotMedium { background: var(--color-warning); }
+.dotHigh { background: var(--color-error); }
+
+.timeSlotsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+}
+
+.timeSlotBtn {
+    background: var(--bg-input);
+    border: 2px solid transparent; /* default invisible border for active state */
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+    color: var(--text-primary);
+}
+
+.timeSlotBtn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px; /* thick status bar on top */
+}
+
+.slotLow::before { background: var(--color-success); }
+.slotMedium::before { background: var(--color-warning); }
+.slotHigh::before { background: var(--color-error); }
+.slotFull::before { background: var(--text-muted); }
+
+.timeSlotBtn:hover:not(.timeSlotDisabled) {
+    transform: translateY(-2px);
+    background: var(--bg-surface-elevated);
+    box-shadow: var(--shadow-sm);
+}
+
+.timeSlotActive {
+    border-color: var(--color-primary);
+    background: var(--bg-surface-elevated);
+}
+
+.timeSlotDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg-surface);
+}
+
+.timeSlotTime {
+    font-family: var(--font-accent);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.timeSlotStatus {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+
+/* Info Panel (Right Column) */
+.prenotaInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.infoCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: all var(--transition-normal);
+}
+
+.infoCard:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.infoCardIcon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.infoCardTitle {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 6px;
+}
+
+.infoCardText {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Confirmation Modal */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    animation: fadeIn 0.2s ease;
+}
+
+.modalOverlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-overlay);
+    backdrop-filter: blur(4px);
+}
+
+.modalContent {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+}
+
+.modalIcon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.modalTitle {
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+}
+
+.modalText {
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.modalClose {
+    margin-top: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .prenotaContent {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .formRow {
+        grid-template-columns: 1fr;
+    }
+
+    .prenotaForm {
+        padding: 24px;
+    }
+}

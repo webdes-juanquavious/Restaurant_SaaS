@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagramma Agenti - Mare Nostrum</title>
+    <style>
+        :root {
+            --bg: #0b1f1f;
+            --accent: #2ecc71;
+            --text: #e8e0d4;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
+        .node {
+            position: absolute;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            width: 150px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+            z-index: 2;
+        }
+        .node:hover {
+            transform: scale(1.05);
+            border-color: var(--accent);
+        }
+        .node-pm { top: 50px; left: 325px; border-top: 3px solid #e67e22; }
+        .node-dev { top: 300px; left: 50px; border-top: 3px solid #3498db; }
+        .node-design { top: 300px; left: 600px; border-top: 3px solid #9b59b6; }
+        .node-data { top: 450px; left: 325px; border-top: 3px solid #e74c3c; }
+        
+        .label { font-weight: 800; font-size: 0.9rem; display: block; margin-bottom: 5px; }
+        .desc { font-size: 0.75rem; opacity: 0.7; }
+        
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        line {
+            stroke: var(--border);
+            stroke-width: 2;
+            stroke-dasharray: 5;
+            animation: dash 10s linear infinite;
+        }
+        @keyframes dash { to { stroke-dashoffset: 100; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg>
+            <line x1="400" y1="130" x2="125" y2="300" />
+            <line x1="400" y1="130" x2="675" y2="300" />
+            <line x1="125" y1="360" x2="400" y2="450" />
+            <line x1="675" y1="360" x2="400" y2="450" />
+            <line x1="400" y1="130" x2="400" y2="450" stroke-dasharray="0" />
+        </svg>
+
+        <div class="node node-pm">
+            <span class="label">PM Agent</span>
+            <span class="desc">Coordinamento e Strategia (Task/Bibbia)</span>
+        </div>
+        <div class="node node-dev">
+            <span class="label">Dev Agent</span>
+            <span class="desc">Sviluppo Next.js e Logica Applicativa</span>
+        </div>
+        <div class="node node-design">
+            <span class="label">Design Agent</span>
+            <span class="desc">UI/UX Premium e Visual Assets</span>
+        </div>
+        <div class="node node-data">
+            <span class="label">Data Agent</span>
+            <span class="desc">Gestione Supabase e BI (n8n)</span>
+        </div>
+    </div>
+</body>
+</html>
