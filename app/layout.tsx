@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Mare Nostrum — Ristorante di Pesce",
@@ -21,12 +22,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" data-theme="dark">
-      <body>
-        <Header />
-        <main style={{ paddingTop: 'var(--header-height)', minHeight: '100vh' }}>
-          {children}
-        </main>
-        <Footer />
+      <body className="antialiased">
+        <AuthProvider>
+          <Header />
+          <main style={{ paddingTop: 'var(--header-height)', minHeight: '100vh' }}>
+            {children}
+          </main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

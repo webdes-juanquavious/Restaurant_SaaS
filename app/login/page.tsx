@@ -3,6 +3,8 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -10,17 +12,17 @@ export default function LoginPage() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loginError, setLoginError] = useState('');
 
+    const { session } = useAuth();
+    const supabase = createClientComponentClient();
+
     const validate = () => {
         const errs: Record<string, string> = {};
         if (!credentials.email.trim()) errs.email = 'Email obbligatoria';
         if (!credentials.password) errs.password = 'Password obbligatoria';
-        if (credentials.password && credentials.password.length < 8) {
-            errs.password = 'Minimo 8 caratteri';
-        }
         return errs;
     };
 
-    const handleSubmit = (e: FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setLoginError('');
         const errs = validate();
@@ -30,16 +32,23 @@ export default function LoginPage() {
         }
         setErrors({});
 
-        /* 
-         * Mock login logic — will be replaced with Supabase Auth.
-         * For now, we demo redirect based on credentials.
-         */
-        if (credentials.email === 'admin@mare.it' && credentials.password === 'admin1234') {
-            router.push('/admin');
-        } else if (credentials.email === 'staff@mare.it' && credentials.password === 'staff1234') {
-            router.push('/dipendenti');
-        } else {
-            setLoginError('Credenziali non valide. Riprova.');
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+        });
+
+        if (error) {
+            setLoginError(error.message);
+            return;
+        }
+
+        if (data.session) {
+            const role = data.session.user.user_metadata.role;
+            if (role === 'admin') {
+                router.push('/admin');
+            } else {
+                router.push('/dipendenti');
+            }
         }
     };
 

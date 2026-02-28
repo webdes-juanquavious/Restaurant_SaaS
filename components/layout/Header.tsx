@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './Header.module.css';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 /* Navigation configs per role */
 const publicNav = [
@@ -32,16 +33,18 @@ const dipendentiNav = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user, signOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
-  /* Determine role from pathname (mock — will use Supabase session later) */
-  const isAdmin = pathname.startsWith('/admin');
-  const isDipendente = pathname.startsWith('/dipendenti');
-  const isLoggedIn = isAdmin || isDipendente;
+  /* Determine role from user metadata */
+  const userRole = user?.user_metadata?.role;
+  const isAdmin = userRole === 'admin' || pathname.startsWith('/admin');
+  const isDipendente = (['cameriere', 'cuoco', 'cassiere', 'barman', 'pizzaiolo'].includes(userRole)) || pathname.startsWith('/dipendenti');
+  const isLoggedIn = !!user;
 
   const navItems = isAdmin ? adminNav : isDipendente ? dipendentiNav : publicNav;
-  const userName = isAdmin ? 'Marco Rossi' : isDipendente ? 'Luca Bianchi' : '';
+  const userName = user?.user_metadata?.full_name || user?.email || '';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -56,9 +59,9 @@ export default function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
-  const handleLogout = () => {
-    // Will be replaced with Supabase signOut
-    router.push('/login');
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/');
   };
 
   const isActive = (href: string) => {
