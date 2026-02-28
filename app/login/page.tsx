@@ -13,7 +13,7 @@ export default function LoginPage() {
     const [loginError, setLoginError] = useState('');
 
     const { session } = useAuth();
-    const supabase = createClientComponentClient();
+    const supabase = createClient();
 
     const validate = () => {
         const errs: Record<string, string> = {};
