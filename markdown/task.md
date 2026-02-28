@@ -63,9 +63,9 @@
  -- Asset Audit: Conversione logica e CSS per gestire wrapper immagini performanti.
 
 ## Fase 5 — Integrations & Supabase Persistence (In Corso)
-- [ ] **Infrastructure Setup**
-    - [ ] Creazione Progetto Supabase e Configurazione `.env.local`
-    - [ ] Inizializzazione Git Repository (GitHub) & Prima Push
+- [x] **Infrastructure Setup**
+    - [x] Creazione Progetto Supabase e Configurazione `.env.local`
+    - [x] Inizializzazione Git Repository (GitHub) & Prima Push
 - [ ] **Database Migration (Supabase/Postgres)**
     - [ ] Creazione Schema: `personale`, `tavoli`, `menu`, `prenotazioni`, `offerte`
     - [ ] Implementazione Row Level Security (RLS) per permessi Admin/Staff
