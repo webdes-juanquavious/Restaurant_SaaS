@@ -20,6 +20,7 @@ Prima di avviare l'app, devi creare le tabelle nel tuo database Supabase:
 1. Vai su [Supabase Dashboard](https://supabase.com/dashboard) > SQL Editor.
 2. Esegui il contenuto di `supabase/migrations/20260228_initial_schema.sql`.
 3. Esegui il contenuto di `supabase/migrations/20260228_auth_sync_trigger.sql` per attivare la sincronizzazione automatica degli utenti.
+4. **IMPORTANTE**: Esegui il contenuto di `supabase/migrations/20260228_advanced_rls_policies.sql` per sbloccare i permessi di scrittura per lo staff autenticato.
 
 ### 3. Creazione Primo Admin
 Per creare l'utente iniziale senza passare per le email di conferma, usa lo script di seeding:
