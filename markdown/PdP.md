@@ -7,8 +7,8 @@ Questo documento definisce le milestone, la gestione del rischio e la strategia 
 | Milestone | Descrizione | Priorità | Stato |
 | :--- | :--- | :---: | :---: |
 | **Fase 1-3** | Core Dashboard, Prenota Base, Gestione Tavoli/Menu | Alta | ✅ Completata |
-| **Fase 4** | UX/UI Premium, Orari Avanzati, Carousel 3D, Recruiting | Alta | 🚧 In Corso |
-| **Fase 5** | Persistenza Supabase, Pagamenti Stripe, Automazioni n8n | Critica | ⏳ Futura |
+| **Fase 4** | UX/UI Premium, Orari Avanzati, Carousel 3D, Recruiting | Alta | ✅ Completata |
+| **Fase 5** | Persistenza Supabase, Auth Reale, Data Intelligence | Critica | 🚧 In Corso |
 
 ---
 
@@ -31,8 +31,8 @@ Il progetto segue una metodologia Agile-Agentic:
 ### Fase 4 (Corrente)
 1. **Blocco 8-9**: Restyling Contabilità e Dettagli Menu. (Pronto per validazione)
 2. **Blocco 10**: Gestione Orari Doppio Turno. (In implementazione)
-3. **Blocco 11**: Carousel 3D Ring Home Page. (In implementazione)
-4. **Blocco 12**: Sistema "Lavora con noi" completo (CRUD annunci + Form pubblica).
+3. **Blocco 11**: Carousel 3D Ring Home Page. (Completato)
+4. **Blocco 12**: Sistema "Lavora con noi" completo. (Completato)
 
 ### Fase 5 (Pianificata)
 1. **Supabase Transition**: Migrazione da Mock Data a PostgreSQL.

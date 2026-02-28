@@ -8,8 +8,7 @@
 - **Framework Frontend/Backend**: Next.js 16 (App Router)
 - **Linguaggio**: TypeScript
 - **Stilizzazione**: CSS Modules (Vanilla CSS) con sistema di Theming (4 temi CSS predefiniti) e utility classes (es. `.glass-panel`).
-- **Data Layer (Fase Attuale/Mock)**: Dati salvati in memoria (stato React / costanti).
-- **Data Layer (Fase Futura)**: Supabase (PostgreSQL + Auth) per la persistenza dei dati.
+- **Data Layer (Corrente)**: Supabase (PostgreSQL + Auth) con persistenza reale.
 - **Integrazioni Future**: Stripe (Pagamenti), n8n (Automazioni Webhook), Google Calendar.
 
 ## 3. Gestione Utenti e Ruoli
