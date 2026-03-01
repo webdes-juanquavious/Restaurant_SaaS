@@ -1,148 +1,140 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './admin.module.css';
+import { createClient } from '@/lib/supabase';
 
 /* ---- Types ---- */
 interface StaffMember {
-    id: number;
+    id: string; // Changed to string for UUID
     nome: string;
     email: string;
     ruolo: string;
-    status: 'active' | 'suspended' | 'malattia';
-    orarioEntrata: string;
-    orarioUscita: string;
-    vacanzePrese: number;
-    vacanzeTotali: number;
-    storico: { giorno: string; label: string; entrata: string; uscita: string; tipo: 'lavoro' | 'malattia' | 'riposo' }[];
+    status: 'attivo' | 'sospeso' | 'malattia';
+    telefono?: string;
+    oreSettimanali: number;
+    created_at?: string;
 }
 
-const ruoliDisponibili = ['Cameriere', 'Cuoco', 'Cassiere', 'Barman', 'Pizzaiolo'];
+const ruoliDisponibili = ['admin', 'cameriere', 'cuoco', 'cassiere', 'barman', 'pizzaiolo'];
 
-const initialStaff: StaffMember[] = [
-    {
-        id: 1, nome: 'Luca Bianchi', email: 'luca@mare.it', ruolo: 'Cameriere', status: 'active',
-        orarioEntrata: '10:00', orarioUscita: '18:00', vacanzePrese: 7, vacanzeTotali: 30,
-        storico: [
-            { giorno: '2026-02-20', label: 'Ven', entrata: '10:00', uscita: '18:00', tipo: 'lavoro' },
-            { giorno: '2026-02-21', label: 'Sab', entrata: '11:00', uscita: '22:00', tipo: 'lavoro' },
-            { giorno: '2026-02-22', label: 'Dom', entrata: '', uscita: '', tipo: 'riposo' },
-            { giorno: '2026-02-23', label: 'Lun', entrata: '10:00', uscita: '18:00', tipo: 'lavoro' },
-            { giorno: '2026-02-24', label: 'Mar', entrata: '', uscita: '', tipo: 'malattia' },
-            { giorno: '2026-02-25', label: 'Mer', entrata: '09:30', uscita: '17:30', tipo: 'lavoro' },
-            { giorno: '2026-02-26', label: 'Gio', entrata: '10:00', uscita: '18:00', tipo: 'lavoro' },
-        ],
-    },
-    {
-        id: 2, nome: 'Anna Verde', email: 'anna@mare.it', ruolo: 'Cuoco', status: 'active',
-        orarioEntrata: '09:00', orarioUscita: '17:00', vacanzePrese: 3, vacanzeTotali: 30,
-        storico: [
-            { giorno: '2026-02-20', label: 'Ven', entrata: '09:00', uscita: '17:00', tipo: 'lavoro' },
-            { giorno: '2026-02-21', label: 'Sab', entrata: '09:00', uscita: '21:00', tipo: 'lavoro' },
-            { giorno: '2026-02-22', label: 'Dom', entrata: '10:00', uscita: '20:00', tipo: 'lavoro' },
-            { giorno: '2026-02-23', label: 'Lun', entrata: '09:00', uscita: '17:00', tipo: 'lavoro' },
-            { giorno: '2026-02-24', label: 'Mar', entrata: '09:00', uscita: '17:00', tipo: 'lavoro' },
-            { giorno: '2026-02-25', label: 'Mer', entrata: '', uscita: '', tipo: 'riposo' },
-            { giorno: '2026-02-26', label: 'Gio', entrata: '09:00', uscita: '17:00', tipo: 'lavoro' },
-        ],
-    },
-    {
-        id: 3, nome: 'Paolo Neri', email: 'paolo@mare.it', ruolo: 'Barman', status: 'malattia',
-        orarioEntrata: '', orarioUscita: '', vacanzePrese: 12, vacanzeTotali: 30,
-        storico: [
-            { giorno: '2026-02-20', label: 'Ven', entrata: '17:00', uscita: '01:00', tipo: 'lavoro' },
-            { giorno: '2026-02-21', label: 'Sab', entrata: '17:00', uscita: '02:00', tipo: 'lavoro' },
-            { giorno: '2026-02-22', label: 'Dom', entrata: '', uscita: '', tipo: 'riposo' },
-            { giorno: '2026-02-23', label: 'Lun', entrata: '', uscita: '', tipo: 'malattia' },
-            { giorno: '2026-02-24', label: 'Mar', entrata: '', uscita: '', tipo: 'malattia' },
-            { giorno: '2026-02-25', label: 'Mer', entrata: '', uscita: '', tipo: 'malattia' },
-            { giorno: '2026-02-26', label: 'Gio', entrata: '', uscita: '', tipo: 'malattia' },
-        ],
-    },
-];
-
-/* ---- Helper: time string to hours ---- */
-function timeToHours(t: string): number {
-    if (!t) return 0;
-    const [h, m] = t.split(':').map(Number);
-    return h + m / 60;
-}
-
-function calcHours(entrata: string, uscita: string): number {
-    if (!entrata || !uscita) return 0;
-    let e = timeToHours(entrata);
-    let u = timeToHours(uscita);
-    if (u < e) u += 24; // overnight
-    return Math.round((u - e) * 10) / 10;
-}
+/* ---- Label style for form ---- */
 
 /* ---- Label style for form ---- */
 const labelStyle: React.CSSProperties = { display: 'block', marginBottom: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.5px' };
 
 export default function AdminPersonalePage() {
-    const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
-    const [newStaff, setNewStaff] = useState({ nome: '', email: '', password: '', ruolo: 'Cameriere' });
+    const [staff, setStaff] = useState<StaffMember[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [newStaff, setNewStaff] = useState({ nome: '', email: '', password: '', ruolo: 'cameriere' });
+
+    const supabase = createClient();
+
+    const fetchStaff = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('personale')
+            .select('*')
+            .order('nome');
+
+        if (data) {
+            const mappedData: StaffMember[] = data.map(item => ({
+                id: item.id,
+                nome: item.nome,
+                email: item.email,
+                ruolo: item.ruolo,
+                status: item.status,
+                telefono: item.telefono,
+                oreSettimanali: item.ore_settimanali,
+                created_at: item.created_at
+            }));
+            setStaff(mappedData);
+        }
+        if (error) console.error('Error fetching staff:', error);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchStaff();
+    }, []);
 
     // Modals
     const [editModal, setEditModal] = useState<StaffMember | null>(null);
-    const [historyModal, setHistoryModal] = useState<StaffMember | null>(null);
     const [passwordModal, setPasswordModal] = useState<StaffMember | null>(null);
     const [newPassword, setNewPassword] = useState({ pw1: '', pw2: '' });
     const [pwError, setPwError] = useState('');
+    const [activeTab, setActiveTab] = useState<'personale' | 'offerte'>('personale');
 
     /* ---- Add staff ---- */
-    const handleAddStaff = () => {
+    const handleAddStaff = async () => {
         if (!newStaff.nome || !newStaff.email || !newStaff.password) return;
         if (newStaff.password.length < 8) { alert('La password deve essere di almeno 8 caratteri.'); return; }
-        const entry: StaffMember = {
-            id: Date.now(), nome: newStaff.nome, email: newStaff.email, ruolo: newStaff.ruolo,
-            status: 'active', orarioEntrata: '10:00', orarioUscita: '18:00',
-            vacanzePrese: 0, vacanzeTotali: 30, storico: [],
-        };
-        setStaff([...staff, entry]);
-        setNewStaff({ nome: '', email: '', password: '', ruolo: 'Cameriere' });
-    };
+        
+        // In a real app, you would call a server function to create the auth user
+        // For now, we insert directly into the table (and assuming auth is handled or bypassed for demo)
+        const { error } = await supabase.from('personale').insert([{
+            nome: newStaff.nome,
+            email: newStaff.email,
+            ruolo: newStaff.ruolo,
+            status: 'attivo'
+        }]);
 
-    const handleDelete = (id: number) => {
-        if (confirm('Sei sicuro di voler eliminare questo dipendente?')) {
-            setStaff(staff.filter((s) => s.id !== id));
+        if (error) {
+            alert('Errore durante la creazione: ' + error.message);
+        } else {
+            setNewStaff({ nome: '', email: '', password: '', ruolo: 'cameriere' });
+            fetchStaff();
         }
     };
 
-    const cycleStatus = (id: number) => {
-        setStaff(staff.map((s) => {
-            if (s.id !== id) return s;
-            const nextStatus = s.status === 'active' ? 'suspended' : s.status === 'suspended' ? 'malattia' : 'active';
-            return { ...s, status: nextStatus };
-        }));
+    const handleDelete = async (id: string) => {
+        if (confirm('Sei sicuro di voler eliminare questo dipendente?')) {
+            const { error } = await supabase.from('personale').delete().eq('id', id);
+            if (error) alert('Errore eliminazione: ' + error.message);
+            else fetchStaff();
+        }
+    };
+
+    const cycleStatus = async (id: string, currentStatus: string) => {
+        const nextStatus = currentStatus === 'attivo' ? 'sospeso' : currentStatus === 'sospeso' ? 'malattia' : 'attivo';
+        const { error } = await supabase.from('personale').update({ status: nextStatus }).eq('id', id);
+        if (error) alert('Errore aggiornamento status: ' + error.message);
+        else fetchStaff();
     };
 
     /* ---- Edit modal save ---- */
-    const handleEditSave = () => {
+    const handleEditSave = async () => {
         if (!editModal) return;
-        setStaff(staff.map((s) => s.id === editModal.id ? editModal : s));
-        setEditModal(null);
+        const { error } = await supabase.from('personale').update({
+            nome: editModal.nome,
+            email: editModal.email,
+            ruolo: editModal.ruolo,
+            status: editModal.status,
+            ore_settimanali: editModal.oreSettimanali
+        }).eq('id', editModal.id);
+
+        if (error) alert('Errore salvataggio: ' + error.message);
+        else {
+            setEditModal(null);
+            fetchStaff();
+        }
     };
 
-    /* ---- Password change ---- */
-    const handlePasswordChange = () => {
-        setPwError('');
-        if (newPassword.pw1.length < 8) { setPwError('La password deve essere di almeno 8 caratteri.'); return; }
-        if (newPassword.pw1 !== newPassword.pw2) { setPwError('Le password non coincidono.'); return; }
-        // In production: update on Supabase
-        alert(`Password aggiornata per ${passwordModal?.nome}`);
+    const handlePasswordChange = async () => {
+        if (newPassword.pw1 !== newPassword.pw2) { setPwError('Le password non coincidono'); return; }
+        if (newPassword.pw1.length < 8) { setPwError('Minimo 8 caratteri'); return; }
+        
+        // In a real production app, password resets for others require Admin API (service role).
+        // Since we are on client-side, we simulate success for demo purposes.
+        alert('Password aggiornata con successo (Simulazione)');
         setPasswordModal(null);
-        setNewPassword({ pw1: '', pw2: '' });
     };
-
-    /* ---- Tab state ---- */
-    const [activeTab, setActiveTab] = useState<'personale' | 'offerte'>('personale');
 
     /* ---- Status label/style helper ---- */
     const getStatusInfo = (status: string) => {
         switch (status) {
-            case 'active': return { label: '● Attivo', className: styles.statusActive };
-            case 'suspended': return { label: '● Sospeso', className: styles.statusSuspended };
+            case 'attivo': return { label: '● Attivo', className: styles.statusActive };
+            case 'sospeso': return { label: '● Sospeso', className: styles.statusSuspended };
             case 'malattia': return { label: '● Malattia', className: styles.statusSick };
             default: return { label: status, className: '' };
         }
@@ -222,35 +214,32 @@ export default function AdminPersonalePage() {
                     </tr>
                 </thead>
                 <tbody>
-                    {staff.map((s) => {
+                    {loading ? (
+                        <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>Caricamento...</td></tr>
+                    ) : staff.map((s) => {
                         const statusInfo = getStatusInfo(s.status);
                         return (
                             <tr key={s.id}>
                                 <td>{s.nome}</td>
                                 <td>{s.email}</td>
-                                <td>{s.ruolo}</td>
+                                <td style={{ textTransform: 'capitalize' }}>{s.ruolo}</td>
                                 <td style={{ fontSize: '0.82rem' }}>
-                                    {s.orarioEntrata && s.orarioUscita
-                                        ? `${s.orarioEntrata} – ${s.orarioUscita}`
-                                        : '—'}
+                                    {s.oreSettimanali}h sett.
                                 </td>
                                 <td>
                                     <span className={`${styles.statusBadge} ${statusInfo.className}`}>{statusInfo.label}</span>
                                 </td>
                                 <td style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                                    <span style={{ color: 'var(--color-primary)' }}>{s.vacanzePrese}</span>
-                                    <span style={{ color: 'var(--text-muted)' }}> su {s.vacanzeTotali}</span>
+                                    <span style={{ color: 'var(--color-primary)' }}>N/A</span>
                                 </td>
                                 <td>
                                     <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
                                         onClick={() => setEditModal({ ...s })}>Modifica</button>
-                                    <button className={`${styles.actionBtn} ${styles.actionBtnHistory}`}
-                                        onClick={() => setHistoryModal(s)}>Storico</button>
                                     <button className={`${styles.actionBtn} ${styles.actionBtnPassword}`}
                                         onClick={() => { setPasswordModal(s); setNewPassword({ pw1: '', pw2: '' }); setPwError(''); }}>Password</button>
                                     <button className={`${styles.actionBtn} ${styles.actionBtnSuspend}`}
-                                        onClick={() => cycleStatus(s.id)}>
-                                        {s.status === 'active' ? 'Sospendi' : s.status === 'suspended' ? 'Malattia' : 'Riattiva'}
+                                        onClick={() => cycleStatus(s.id, s.status)}>
+                                        {s.status === 'attivo' ? 'Sospendi' : s.status === 'sospeso' ? 'Malattia' : 'Riattiva'}
                                     </button>
                                     <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
                                         onClick={() => handleDelete(s.id)}>Elimina</button>
@@ -294,34 +283,17 @@ export default function AdminPersonalePage() {
                                 <label style={labelStyle}>Status</label>
                                 <select value={editModal.status}
                                     onChange={(e) => setEditModal({ ...editModal, status: e.target.value as StaffMember['status'] })} style={{ width: '100%' }}>
-                                    <option value="active">Attivo</option>
-                                    <option value="suspended">Sospeso</option>
+                                    <option value="attivo">Attivo</option>
+                                    <option value="sospeso">Sospeso</option>
                                     <option value="malattia">Malattia</option>
                                 </select>
                             </div>
                         </div>
                         <div className={styles.formRow}>
                             <div>
-                                <label style={labelStyle}>Orario Entrata</label>
-                                <input type="time" value={editModal.orarioEntrata}
-                                    onChange={(e) => setEditModal({ ...editModal, orarioEntrata: e.target.value })} style={{ width: '100%' }} />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Orario Uscita</label>
-                                <input type="time" value={editModal.orarioUscita}
-                                    onChange={(e) => setEditModal({ ...editModal, orarioUscita: e.target.value })} style={{ width: '100%' }} />
-                            </div>
-                        </div>
-                        <div className={styles.formRow}>
-                            <div>
-                                <label style={labelStyle}>Vacanze Prese</label>
-                                <input type="number" min={0} max={editModal.vacanzeTotali} value={editModal.vacanzePrese}
-                                    onChange={(e) => setEditModal({ ...editModal, vacanzePrese: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Vacanze Totali</label>
-                                <input type="number" min={0} value={editModal.vacanzeTotali}
-                                    onChange={(e) => setEditModal({ ...editModal, vacanzeTotali: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
+                                <label style={labelStyle}>Ore Settimanali</label>
+                                <input type="number" value={editModal.oreSettimanali}
+                                    onChange={(e) => setEditModal({ ...editModal, oreSettimanali: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
                             </div>
                         </div>
 
@@ -333,97 +305,6 @@ export default function AdminPersonalePage() {
                 </div>
             )}
 
-            {/* ============ HISTORY MODAL (Bar Chart) ============ */}
-            {historyModal && (
-                <div className={styles.modal}>
-                    <div className={styles.modalOverlay} onClick={() => setHistoryModal(null)} />
-                    <div className={`${styles.modalContent} ${styles.modalWide}`}>
-                        <button className={styles.modalClose} onClick={() => setHistoryModal(null)}>✕</button>
-                        <h3 className={styles.modalTitle}>Storico Presenze</h3>
-                        <p className={styles.modalSubtitle}>{historyModal.nome} — Ultimi 7 giorni</p>
-
-                        {/* Bar Chart */}
-                        <div className={styles.barChart}>
-                            {historyModal.storico.map((day, i) => {
-                                const hours = calcHours(day.entrata, day.uscita);
-                                const maxH = 12;
-                                const heightPct = day.tipo === 'malattia' ? 100 : day.tipo === 'riposo' ? 0 : Math.min((hours / maxH) * 100, 100);
-                                const bgColor = day.tipo === 'malattia' ? 'var(--color-error)' : day.tipo === 'riposo' ? 'var(--border-color)' : 'var(--color-primary)';
-
-                                return (
-                                    <div key={i} className={styles.barGroup}>
-                                        <div className={styles.barStack}>
-                                            <div
-                                                className={styles.bar}
-                                                style={{
-                                                    height: `${heightPct}%`,
-                                                    background: bgColor,
-                                                    opacity: day.tipo === 'riposo' ? 0.3 : 1,
-                                                }}
-                                                title={
-                                                    day.tipo === 'malattia' ? 'Malattia'
-                                                        : day.tipo === 'riposo' ? 'Giorno di riposo'
-                                                            : `${day.entrata} - ${day.uscita} (${hours}h)`
-                                                }
-                                            />
-                                        </div>
-                                        <span className={styles.barLabel}>{day.label}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Legend */}
-                        <div className={styles.barLegend}>
-                            <div className={styles.barLegendItem}>
-                                <div className={styles.barLegendColor} style={{ background: 'var(--color-primary)' }} />
-                                Lavoro
-                            </div>
-                            <div className={styles.barLegendItem}>
-                                <div className={styles.barLegendColor} style={{ background: 'var(--color-error)' }} />
-                                Malattia
-                            </div>
-                            <div className={styles.barLegendItem}>
-                                <div className={styles.barLegendColor} style={{ background: 'var(--border-color)' }} />
-                                Riposo
-                            </div>
-                        </div>
-
-                        {/* Detail Table */}
-                        <table className={styles.dataTable} style={{ marginTop: '24px' }}>
-                            <thead>
-                                <tr>
-                                    <th>Giorno</th>
-                                    <th>Tipo</th>
-                                    <th>Entrata</th>
-                                    <th>Uscita</th>
-                                    <th>Ore</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {historyModal.storico.map((day, i) => (
-                                    <tr key={i}>
-                                        <td>{day.label} {day.giorno}</td>
-                                        <td>
-                                            <span className={`${styles.statusBadge} ${day.tipo === 'lavoro' ? styles.statusActive : day.tipo === 'malattia' ? styles.statusSick : styles.statusSuspended
-                                                }`}>
-                                                {day.tipo === 'lavoro' ? '● Lavoro' : day.tipo === 'malattia' ? '● Malattia' : '● Riposo'}
-                                            </span>
-                                        </td>
-                                        <td>{day.entrata || '—'}</td>
-                                        <td>{day.uscita || '—'}</td>
-                                        <td style={{ fontWeight: 600 }}>{day.tipo === 'lavoro' ? `${calcHours(day.entrata, day.uscita)}h` : '—'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        <div className={styles.modalActions}>
-                            <button className="btn btn-primary" onClick={() => setHistoryModal(null)}>Chiudi</button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ============ PASSWORD MODAL ============ */}
             {passwordModal && (

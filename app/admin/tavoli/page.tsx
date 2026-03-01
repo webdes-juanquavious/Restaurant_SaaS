@@ -1,48 +1,33 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import styles from '../admin.module.css';
+import { createClient } from '@/lib/supabase';
 
 /* ---- Types ---- */
 interface Tavolo {
-    id: number;
+    id: string; // Changed to string for UUID
+    numero: number;
     nome: string;
     posti: number;
-    status: 'active' | 'suspended';
+    status: 'attivo' | 'sospeso' | 'occupato';
 }
 
 interface Prenotazione {
-    id: number;
-    tavoloId: number;
+    id: string; // UUID
+    tavoloId: string; // UUID
     data: string;
     orario: string;
     cliente: string;
     telefono: string;
     persone: number;
     totale: number;
-    status: 'confermata' | 'annullata_tempo' | 'annullata_manuale';
+    status: 'confermata' | 'annullata' | 'no-show';
 }
 
 const labelStyle: React.CSSProperties = { display: 'block', marginBottom: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.5px' };
 
-/* ---- Mock Data ---- */
-const initialTavoli: Tavolo[] = [
-    { id: 1, nome: 'Tavolo #1', posti: 4, status: 'active' },
-    { id: 2, nome: 'Tavolo #2', posti: 6, status: 'active' },
-    { id: 3, nome: 'Tavolo #3', posti: 2, status: 'suspended' },
-    { id: 4, nome: 'Tavolo #4', posti: 8, status: 'active' },
-    { id: 5, nome: 'Tavolo #5', posti: 4, status: 'active' },
-];
-
-const today = new Date().toISOString().split('T')[0];
-
-const mockPrenotazioni: Prenotazione[] = [
-    { id: 1, tavoloId: 1, data: today, orario: '12:30', cliente: 'Mario Rossi', telefono: '+393331234567', persone: 3, totale: 150, status: 'confermata' },
-    { id: 2, tavoloId: 1, data: today, orario: '20:00', cliente: 'Gianna Blu', telefono: '+393339876543', persone: 4, totale: 200, status: 'confermata' },
-    { id: 3, tavoloId: 2, data: today, orario: '13:00', cliente: 'Carlo Neri', telefono: '', persone: 6, totale: 300, status: 'confermata' },
-    { id: 4, tavoloId: 4, data: today, orario: '20:30', cliente: 'Sara Bianchi', telefono: '+393334445555', persone: 4, totale: 120, status: 'annullata_tempo' },
-    { id: 5, tavoloId: 5, data: today, orario: '21:00', cliente: 'Luca Verdi', telefono: '+393332221111', persone: 2, totale: 120, status: 'confermata' },
-];
+// Mock data removed in favor of Supabase
 
 /* Helpers */
 const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -55,11 +40,49 @@ function formatDate(y: number, m: number, d: number) { return `${y}-${String(m +
 const colors = ['#e67e22', '#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#1abc9c', '#f39c12', '#e84393'];
 
 export default function AdminTavoliPage() {
+    const today = new Date().toISOString().split('T')[0];
     const [activeMainTab, setActiveMainTab] = useState<'prenotazioni' | 'gestione'>('prenotazioni');
     
-    const [tavoli, setTavoli] = useState<Tavolo[]>(initialTavoli);
-    const [prenotazioni, setPrenotazioni] = useState<Prenotazione[]>(mockPrenotazioni);
-    const [newTavolo, setNewTavolo] = useState({ nome: '', posti: '4' });
+    const [tavoli, setTavoli] = useState<Tavolo[]>([]);
+    const [prenotazioni, setPrenotazioni] = useState<Prenotazione[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [newTavolo, setNewTavolo] = useState({ nome: '', posti: '4', numero: '' });
+
+    const supabase = createClient();
+
+    const fetchAllData = async () => {
+        setLoading(true);
+        const { data: tData, error: tError } = await supabase.from('tavoli').select('*').order('numero');
+        const { data: pData, error: pError } = await supabase.from('prenotazioni').select('*').order('data', { ascending: false });
+
+        if (tData) {
+            setTavoli(tData.map(t => ({
+                id: t.id,
+                numero: t.numero,
+                nome: t.nome || `Tavolo #${t.numero}`,
+                posti: t.posti,
+                status: t.status
+            })));
+        }
+        if (pData) {
+            setPrenotazioni(pData.map(p => ({
+                id: p.id,
+                tavoloId: p.tavolo_id,
+                data: p.data,
+                orario: p.orario,
+                cliente: p.cliente_nome,
+                telefono: p.cliente_telefono,
+                persone: p.persone,
+                totale: 0, // Not in schema, fallback to 0 or calculate if needed
+                status: p.stato
+            })));
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchAllData();
+    }, []);
 
     // Calendar state
     const [calendarMode, setCalendarMode] = useState<'giorno' | 'range'>('giorno');
@@ -76,33 +99,57 @@ export default function AdminTavoliPage() {
     const isPast = (dateStr: string) => dateStr < today;
 
     /* ---- Gestione Tavoli ---- */
-    const handleAddTavolo = () => {
-        if (!newTavolo.nome) return;
-        setTavoli([...tavoli, { id: Date.now(), nome: newTavolo.nome, posti: parseInt(newTavolo.posti) || 4, status: 'active' }]);
-        setNewTavolo({ nome: '', posti: '4' });
-    };
-
-    const toggleSuspend = (id: number) => {
-        setTavoli(tavoli.map(t => t.id === id ? { ...t, status: t.status === 'active' ? 'suspended' : 'active' } : t));
-    };
-
-    const handleDelete = (id: number) => {
-        if (confirm('Sei sicuro di voler eliminare questo tavolo? Le prenotazioni associate andranno perse.')) {
-            setTavoli(tavoli.filter(t => t.id !== id));
-            setPrenotazioni(prenotazioni.filter(p => p.tavoloId !== id));
+    const handleAddTavolo = async () => {
+        if (!newTavolo.numero) return;
+        const { error } = await supabase.from('tavoli').insert([{
+            numero: parseInt(newTavolo.numero),
+            nome: newTavolo.nome,
+            posti: parseInt(newTavolo.posti),
+            status: 'attivo'
+        }]);
+        if (error) alert('Errore creazione tavolo: ' + error.message);
+        else {
+            setNewTavolo({ nome: '', posti: '4', numero: '' });
+            fetchAllData();
         }
     };
 
-    const handleEditSave = () => {
+    const toggleSuspend = async (id: string, currentStatus: string) => {
+        const nextStatus = currentStatus === 'attivo' ? 'sospeso' : 'attivo';
+        const { error } = await supabase.from('tavoli').update({ status: nextStatus }).eq('id', id);
+        if (error) alert('Errore aggiornamento: ' + error.message);
+        else fetchAllData();
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm('Sei sicuro di voler eliminare questo tavolo?')) {
+            const { error } = await supabase.from('tavoli').delete().eq('id', id);
+            if (error) alert('Errore eliminazione: ' + error.message);
+            else fetchAllData();
+        }
+    };
+
+    const handleEditSave = async () => {
         if (!editModal) return;
-        setTavoli(tavoli.map(t => t.id === editModal.id ? editModal : t));
-        setEditModal(null);
+        const { error } = await supabase.from('tavoli').update({
+            nome: editModal.nome,
+            numero: editModal.numero,
+            posti: editModal.posti,
+            status: editModal.status
+        }).eq('id', editModal.id);
+        if (error) alert('Errore salvataggio: ' + error.message);
+        else {
+            setEditModal(null);
+            fetchAllData();
+        }
     };
 
     /* ---- Gestione Prenotazioni ---- */
-    const handleStatusChange = (id: number, status: Prenotazione['status']) => {
+    const handleStatusChange = async (id: string, status: Prenotazione['status']) => {
         if (confirm(`Confermi di voler modificare lo stato in "${status}"?`)) {
-            setPrenotazioni(prenotazioni.map(p => p.id === id ? { ...p, status } : p));
+            const { error } = await supabase.from('prenotazioni').update({ stato: status }).eq('id', id);
+            if (error) alert('Errore aggiornamento: ' + error.message);
+            else fetchAllData();
         }
     };
 
@@ -268,17 +315,17 @@ export default function AdminTavoliPage() {
                                                         <td>{p.persone}</td>
                                                         <td>
                                                             {p.status === 'confermata' && <span className={`${styles.statusBadge} ${styles.statusActive}`}>Confermata</span>}
-                                                            {p.status === 'annullata_tempo' && <span className={`${styles.statusBadge} ${styles.statusSuspended}`}>No-Show</span>}
-                                                            {p.status === 'annullata_manuale' && <span className={`${styles.statusBadge} ${styles.statusSuspended}`}>Stornata</span>}
+                                                            {p.status === 'no-show' && <span className={`${styles.statusBadge} ${styles.statusSuspended}`}>No-Show</span>}
+                                                            {p.status === 'annullata' && <span className={`${styles.statusBadge} ${styles.statusSuspended}`}>Annullata</span>}
                                                         </td>
                                                         <td>
                                                             {p.status === 'confermata' && (
                                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                                     <button className={styles.actionBtn} style={{ background: 'var(--bg-surface-elevated)' }} onClick={() => handleStatusChange(p.id, 'annullata_manuale')}>
-                                                                        Annulla (M)
+                                                                     <button className={styles.actionBtn} style={{ background: 'var(--bg-surface-elevated)' }} onClick={() => handleStatusChange(p.id, 'annullata')}>
+                                                                         Annulla
                                                                     </button>
-                                                                    <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleStatusChange(p.id, 'annullata_tempo')}>
-                                                                        No-Show (15m)
+                                                                    <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleStatusChange(p.id, 'no-show')}>
+                                                                        No-Show
                                                                     </button>
                                                                 </div>
                                                             )}
@@ -395,8 +442,8 @@ export default function AdminTavoliPage() {
                                         <td style={{ fontWeight: 600 }}>{t.nome}</td>
                                         <td>{t.posti}</td>
                                         <td>
-                                            <span className={`${styles.statusBadge} ${t.status === 'active' ? styles.statusActive : styles.statusSuspended}`}>
-                                                {t.status === 'active' ? '● Attivo' : '● Sospeso'}
+                                            <span className={`${styles.statusBadge} ${t.status === 'attivo' ? styles.statusActive : t.status === 'occupato' ? styles.statusActive : styles.statusSuspended}`}>
+                                                {t.status === 'attivo' ? '● Attivo' : t.status === 'occupato' ? '● Occupato' : '● Sospeso'}
                                             </span>
                                         </td>
                                         <td style={{ fontWeight: 500 }}>{prenOggi.length}</td>
@@ -406,8 +453,8 @@ export default function AdminTavoliPage() {
                                         <td>
                                             <div style={{ display: 'flex', gap: '8px' }}>
                                                 <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={() => setEditModal({ ...t })}>Modifica</button>
-                                                <button className={`${styles.actionBtn}`} style={{ background: t.status === 'active' ? 'var(--bg-surface-elevated)' : 'var(--color-success)', color: 'var(--text-primary)' }} onClick={() => toggleSuspend(t.id)}>
-                                                    {t.status === 'active' ? 'Sospendi' : 'Riattiva'}
+                                                <button className={`${styles.actionBtn}`} style={{ background: t.status === 'attivo' ? 'var(--bg-surface-elevated)' : 'var(--color-success)', color: 'var(--text-primary)' }} onClick={() => toggleSuspend(t.id, t.status)}>
+                                                    {t.status === 'attivo' ? 'Sospendi' : 'Riattiva'}
                                                 </button>
                                                 <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleDelete(t.id)}>Elimina</button>
                                                 <a href="/admin/contabilita" className={`${styles.actionBtn}`} style={{ background: 'var(--color-primary)', color: 'var(--text-on-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
@@ -425,8 +472,12 @@ export default function AdminTavoliPage() {
                         <h3 className={styles.formPanelTitle}>Aggiungi un nuovo Tavolo</h3>
                         <div className={styles.formRow}>
                             <div>
-                                <label style={labelStyle}>Nome Tavolo</label>
-                                <input type="text" placeholder="Es: Tavolo #6" value={newTavolo.nome} onChange={(e) => setNewTavolo({ ...newTavolo, nome: e.target.value })} style={{ width: '100%' }} />
+                                <label style={labelStyle}>Numero Tavolo</label>
+                                <input type="number" placeholder="1" value={newTavolo.numero} onChange={(e) => setNewTavolo({ ...newTavolo, numero: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Nome Alternativo (Opzionale)</label>
+                                <input type="text" placeholder="Es: Terrazza sud" value={newTavolo.nome} onChange={(e) => setNewTavolo({ ...newTavolo, nome: e.target.value })} style={{ width: '100%' }} />
                             </div>
                             <div>
                                 <label style={labelStyle}>Numero Posti</label>
