@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import styles from './admin.module.css';
 import { createClient } from '@/lib/supabase';
+import TableHeatmap from '@/components/admin/TableHeatmap';
+import SeasonalInsights from '@/components/admin/SeasonalInsights';
 
 /* ---- Types ---- */
 interface StaffMember {
@@ -63,13 +65,13 @@ export default function AdminPersonalePage() {
     const [passwordModal, setPasswordModal] = useState<StaffMember | null>(null);
     const [newPassword, setNewPassword] = useState({ pw1: '', pw2: '' });
     const [pwError, setPwError] = useState('');
-    const [activeTab, setActiveTab] = useState<'personale' | 'offerte'>('personale');
+    const [activeTab, setActiveTab] = useState<'personale' | 'offerte' | 'analitiche'>('personale');
 
     /* ---- Add staff ---- */
     const handleAddStaff = async () => {
         if (!newStaff.nome || !newStaff.email || !newStaff.password) return;
         if (newStaff.password.length < 8) { alert('La password deve essere di almeno 8 caratteri.'); return; }
-        
+
         // In a real app, you would call a server function to create the auth user
         // For now, we insert directly into the table (and assuming auth is handled or bypassed for demo)
         const { error } = await supabase.from('personale').insert([{
@@ -123,7 +125,7 @@ export default function AdminPersonalePage() {
     const handlePasswordChange = async () => {
         if (newPassword.pw1 !== newPassword.pw2) { setPwError('Le password non coincidono'); return; }
         if (newPassword.pw1.length < 8) { setPwError('Minimo 8 caratteri'); return; }
-        
+
         // In a real production app, password resets for others require Admin API (service role).
         // Since we are on client-side, we simulate success for demo purposes.
         alert('Password aggiornata con successo (Simulazione)');
@@ -143,7 +145,7 @@ export default function AdminPersonalePage() {
     return (
         <>
             <div style={{ display: 'flex', gap: '24px', marginBottom: '32px' }}>
-                <div 
+                <div
                     className={`${styles.tabHeaderBox} ${activeTab === 'personale' ? styles.tabHeaderBoxActive : ''}`}
                     onClick={() => setActiveTab('personale')}
                     style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)' }}
@@ -151,14 +153,21 @@ export default function AdminPersonalePage() {
                     <h2 style={{ fontSize: '1.8rem', marginBottom: '8px' }}>Gestione Personale</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Aggiungi, modifica o rimuovi i dipendenti del ristorante.</p>
                 </div>
-                <div 
+                <div
                     className={`${styles.tabHeaderBox} ${activeTab === 'offerte' ? styles.tabHeaderBoxActive : ''}`}
                     onClick={() => setActiveTab('offerte')}
-                    style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)' }}
+                    style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px' }}
                 >
-                    <h2 style={{ fontSize: '1.5rem', color: activeTab === 'offerte' ? 'var(--color-primary)' : 'var(--color-error)', textAlign: 'center' }}>
-                        Gestione Offerte di lavoro
-                    </h2>
+                    <h2 style={{ fontSize: '1.4rem' }}>Offerte Lavoro</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Gestione recruiting.</p>
+                </div>
+                <div
+                    className={`${styles.tabHeaderBox} ${activeTab === 'analitiche' ? styles.tabHeaderBoxActive : ''}`}
+                    onClick={() => setActiveTab('analitiche')}
+                    style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px' }}
+                >
+                    <h2 style={{ fontSize: '1.4rem' }}>Analitiche</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Heatmap e Trend.</p>
                 </div>
             </div>
 
@@ -167,6 +176,7 @@ export default function AdminPersonalePage() {
                     {/* ============ ADD STAFF FORM ============ */}
                     <div className={styles.formPanel}>
                         <h3 className={styles.formPanelTitle}>Aggiungi Dipendente</h3>
+                        {/* ... existing form ... */}
                         <div className={styles.formRow}>
                             <div>
                                 <label style={labelStyle}>Nome</label>
@@ -180,7 +190,7 @@ export default function AdminPersonalePage() {
                             </div>
                             <div>
                                 <label style={labelStyle}>Password</label>
-                                <input type="password" placeholder="Min. 8 caratteri" value={newStaff.password}
+                                <input type="password" placeholder="Min. 8 caratteri" value={newPassword.pw1}
                                     onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} style={{ width: '100%' }} />
                             </div>
                             <div>
@@ -192,63 +202,68 @@ export default function AdminPersonalePage() {
                         </div>
                         <button className="btn btn-primary" onClick={handleAddStaff} style={{ marginTop: '8px' }}>Crea Account</button>
                     </div>
+
+                    {/* ============ STAFF TABLE ============ */}
+                    <table className={styles.dataTable}>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Ruolo</th>
+                                <th>Orario</th>
+                                <th>Status</th>
+                                <th>Vacanze</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>Caricamento...</td></tr>
+                            ) : staff.map((s) => {
+                                const statusInfo = getStatusInfo(s.status);
+                                return (
+                                    <tr key={s.id}>
+                                        <td>{s.nome}</td>
+                                        <td>{s.email}</td>
+                                        <td style={{ textTransform: 'capitalize' }}>{s.ruolo}</td>
+                                        <td style={{ fontSize: '0.82rem' }}>
+                                            {s.oreSettimanali}h sett.
+                                        </td>
+                                        <td>
+                                            <span className={`${styles.statusBadge} ${statusInfo.className}`}>{statusInfo.label}</span>
+                                        </td>
+                                        <td style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                                            <span style={{ color: 'var(--color-primary)' }}>N/A</span>
+                                        </td>
+                                        <td>
+                                            <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
+                                                onClick={() => setEditModal({ ...s })}>Modifica</button>
+                                            <button className={`${styles.actionBtn} ${styles.actionBtnPassword}`}
+                                                onClick={() => { setPasswordModal(s); setNewPassword({ pw1: '', pw2: '' }); setPwError(''); }}>Password</button>
+                                            <button className={`${styles.actionBtn} ${styles.actionBtnSuspend}`}
+                                                onClick={() => cycleStatus(s.id, s.status)}>
+                                                {s.status === 'attivo' ? 'Sospendi' : s.status === 'sospeso' ? 'Malattia' : 'Riattiva'}
+                                            </button>
+                                            <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
+                                                onClick={() => handleDelete(s.id)}>Elimina</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </>
-            ) : (
+            ) : activeTab === 'offerte' ? (
                 <div className={styles.formPanel} style={{ textAlign: 'center', padding: '60px' }}>
                     <h3 style={{ marginBottom: '16px' }}>Modulo Offerte di Lavoro</h3>
                     <p style={{ color: 'var(--text-muted)' }}>Prossimamente: In questa sezione potrai gestire gli annunci di lavoro per il ristorante.</p>
                 </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <TableHeatmap />
+                    <SeasonalInsights />
+                </div>
             )}
-
-            {/* ============ STAFF TABLE ============ */}
-            <table className={styles.dataTable}>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Ruolo</th>
-                        <th>Orario</th>
-                        <th>Status</th>
-                        <th>Vacanze</th>
-                        <th>Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {loading ? (
-                        <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>Caricamento...</td></tr>
-                    ) : staff.map((s) => {
-                        const statusInfo = getStatusInfo(s.status);
-                        return (
-                            <tr key={s.id}>
-                                <td>{s.nome}</td>
-                                <td>{s.email}</td>
-                                <td style={{ textTransform: 'capitalize' }}>{s.ruolo}</td>
-                                <td style={{ fontSize: '0.82rem' }}>
-                                    {s.oreSettimanali}h sett.
-                                </td>
-                                <td>
-                                    <span className={`${styles.statusBadge} ${statusInfo.className}`}>{statusInfo.label}</span>
-                                </td>
-                                <td style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                                    <span style={{ color: 'var(--color-primary)' }}>N/A</span>
-                                </td>
-                                <td>
-                                    <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
-                                        onClick={() => setEditModal({ ...s })}>Modifica</button>
-                                    <button className={`${styles.actionBtn} ${styles.actionBtnPassword}`}
-                                        onClick={() => { setPasswordModal(s); setNewPassword({ pw1: '', pw2: '' }); setPwError(''); }}>Password</button>
-                                    <button className={`${styles.actionBtn} ${styles.actionBtnSuspend}`}
-                                        onClick={() => cycleStatus(s.id, s.status)}>
-                                        {s.status === 'attivo' ? 'Sospendi' : s.status === 'sospeso' ? 'Malattia' : 'Riattiva'}
-                                    </button>
-                                    <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
-                                        onClick={() => handleDelete(s.id)}>Elimina</button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
 
             {/* ============ EDIT MODAL ============ */}
             {editModal && (
