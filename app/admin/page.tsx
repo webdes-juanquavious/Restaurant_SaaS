@@ -8,7 +8,7 @@ import SeasonalInsights from '@/components/admin/SeasonalInsights';
 
 /* ---- Types ---- */
 interface StaffMember {
-    id: string; // Changed to string for UUID
+    id: string;
     nome: string;
     email: string;
     ruolo: string;
@@ -16,6 +16,7 @@ interface StaffMember {
     telefono?: string;
     oreSettimanali: number;
     created_at?: string;
+    password?: string; // temp field for UI only
 }
 
 const ruoliDisponibili = ['admin', 'cameriere', 'cuoco', 'cassiere', 'barman', 'pizzaiolo'];
@@ -91,7 +92,7 @@ export default function AdminPersonalePage() {
             }
             setNewStaff({ nome: '', email: '', password: '', ruolo: 'cameriere' });
             fetchStaff();
-        } catch (err) {
+        } catch (err: any) {
             alert('Errore di rete o server: ' + err.message);
         }
     };
@@ -119,12 +120,11 @@ export default function AdminPersonalePage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: editModal.id,
-                    email: editModal.email,
+                    userId: editModal.id,
                     nome: editModal.nome,
                     ruolo: editModal.ruolo,
-                    password: editModal.password || '',
-                    updatePassword: !!editModal.password
+                    oreSettimanali: editModal.oreSettimanali,
+                    newPassword: (editModal as any).password || undefined
                 })
             });
             const result = await res.json();
@@ -134,7 +134,7 @@ export default function AdminPersonalePage() {
             }
             setEditModal(null);
             fetchStaff();
-        } catch (err) {
+        } catch (err: any) {
             alert('Errore di rete o server: ' + err.message);
         }
     };
@@ -142,11 +142,26 @@ export default function AdminPersonalePage() {
     const handlePasswordChange = async () => {
         if (newPassword.pw1 !== newPassword.pw2) { setPwError('Le password non coincidono'); return; }
         if (newPassword.pw1.length < 8) { setPwError('Minimo 8 caratteri'); return; }
+        if (!passwordModal) return;
 
-        // In a real production app, password resets for others require Admin API (service role).
-        // Since we are on client-side, we simulate success for demo purposes.
-        alert('Password aggiornata con successo (Simulazione)');
-        setPasswordModal(null);
+        try {
+            const res = await fetch('/api/update-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: passwordModal.id,
+                    nome: passwordModal.nome,
+                    ruolo: passwordModal.ruolo,
+                    newPassword: newPassword.pw1
+                })
+            });
+            const result = await res.json();
+            if (!res.ok) { setPwError(result.error || 'Errore aggiornamento password'); return; }
+            alert('✅ Password aggiornata con successo!');
+            setPasswordModal(null);
+        } catch (err: any) {
+            setPwError('Errore di rete: ' + err.message);
+        }
     };
 
     /* ---- Status label/style helper ---- */
