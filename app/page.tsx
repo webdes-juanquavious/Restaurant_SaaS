@@ -260,30 +260,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ WORK WITH US PREVIEW ============ */}
-      <section className={styles.workWithUsPreview}>
-        <div className="container reveal" ref={addToRefs} style={{ textAlign: 'center', padding: '80px 0' }}>
-          <div className="glass-panel" style={{ padding: '60px', display: 'flex', alignItems: 'center', gap: '40px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '300px' }}>
-              <img
-                src="https://images.unsplash.com/photo-1541532713592-79a0317b628f?auto=format&fit=crop&w=800&q=80"
-                alt="Waiter Service"
-                style={{ width: '100%', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }}
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: '300px', textAlign: 'left' }}>
-              <h2 className="section-title" style={{ textAlign: 'left', fontSize: '2.5rem' }}>Lavora con Noi</h2>
-              <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                Entra a far parte della nostra squadra. Cerchiamo persone appassionate per la sala e la cucina.
-                Scopri le posizioni aperte e invia la tua candidatura.
-              </p>
-              <Link href="/lavora-con-noi" className="btn btn-primary">
-                Posizioni Aperte
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      // ...existing code...
     </>
   );
 }

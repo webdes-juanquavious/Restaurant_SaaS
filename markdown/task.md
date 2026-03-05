@@ -66,19 +66,22 @@
 - [x] **Infrastructure Setup**
     - [x] Creazione Progetto Supabase e Configurazione `.env.local`
     - [x] Inizializzazione Git Repository (GitHub) & Prima Push
-- [ ] **Database Migration (Supabase/Postgres)**
-    - [ ] Creazione Schema: `personale`, `tavoli`, `menu`, `prenotazioni`, `offerte`
-    - [ ] Implementazione Row Level Security (RLS) per permessi Admin/Staff
-- [ ] **Auth Real Life**
-    - [ ] Migrazione da Mock Login a Supabase Auth
-    - [ ] Middleware di protezione rotte server-side
+- [x] **Database Migration (Supabase/Postgres)**
+    - [x] Creazione Schema: `personale`, `tavoli`, `menu`, `prenotazioni`, `offerte`
+    - [x] Implementazione Row Level Security (RLS) per permessi Admin/Staff
+- [x] **Full Data Sync**: Sincronizzazione Home, Menu, Staff, Tavoli, Prenotazioni e Contabilità.
+- [x] **Auth Real Life**
+    - [x] Migrazione da Mock Login a Supabase Auth
+    - [x] Middleware di protezione rotte server-side
 - [ ] **Google Calendar Sync**
     - [ ] Configurazione Google Cloud Console & API Calendars
     - [ ] Sincronizzazione automatica prenotazioni confermate su Calendario Ristorante
+- [ ] **Full Database-Visualization Sync**
+    - [ ] Sincronizzare tutte le informazioni in tutte le pagine in accordo con il database.
 - [ ] **Blocco 5.1: Predictive Analytics**
     - [ ] Seasonal Insights: Analisi piatti più richiesti in base al periodo (es. Zuppe vs Crudi).
-    - [ ] Heatmap Tavoli: Identificazione tavoli preferiti (luce, posizione, atmosfera).
-    - [ ] Revenue Trends: Dashboard predittiva sui ricavi futuri basata sui trend.
+    - [ ] Heatmap Tavoli: Identificazione tavoli preferiti (luce, posizione, atmosfera). Una mappa visiva della sala che mostra quali tavoli sono più "caldi" (frequentati) in base alle prenotazioni degli ultimi 30 giorni.
+    - [ ] Revenue Trends: Dashboard predittiva sui ricavi futuri basata sui trend. Un pannello che analizza i feedback dei clienti per segnalarti i piatti più amati del momento e darti consigli di business.
 - [ ] **Blocco 5.2: Logica a Menu Multipli**
     - [ ] Time-Based Menus: Cambio automatico tra Pranzo, Cena e Happy Hour.
     - [ ] Seasonal/Occasion Menus: Gestione menu Estate/Inverno o Eventi Speciali (Natale).
@@ -106,7 +109,7 @@
 - [ ] **Online Verification**
     - [ ] Deployment URL di produzione e SSL Check
     - [ ] Verifica performance Live (Core Web Vitals)
-- [ ] ** Stripe & QR Payments**
+- [ ] **Stripe & QR Payments**
     - [ ] Stripe Integration: Pieno supporto ai pagamenti degli ordini online.
     - [ ] Pagamento QR al Tavolo: Integrazione Apple Pay e Google Pay per chi siede al ristorante.
     - [ ] Admin Control: Toggle switch per abilitare/disabilitare i pagamenti digitali via codice QR al tavolo.

@@ -1,28 +1,61 @@
+'use client';
+
 import Link from 'next/link';
 import styles from './Footer.module.css';
+import { createClient } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 
 export default function Footer() {
-    // Intent links
-    const phoneNum = "390612345678";
-    const address = "Via del Porto 42, 00100 Roma, Italia";
-    
+    const [info, setInfo] = useState<any>(null);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchInfo = async () => {
+            const { data } = await supabase.from('ristorante_info').select('*').single();
+            if (data) setInfo(data);
+        };
+        fetchInfo();
+    }, [supabase]);
+
+    // Defaults
+    const phoneDisplay = info?.telefono || "+39 06 1234 5678";
+    const phoneNum = phoneDisplay.replace(/\D/g, '');
+    const address = info?.indirizzo || "Via del Porto 42, 00100 Roma, Italia";
+    const email = info?.email || "info@marenostrum.it";
+
     // Universal maps link
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-    
+    const mapsLink = info?.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
     // WhatsApp direct link
     const waLink = `https://wa.me/${phoneNum}`;
+
+    const renderHours = () => {
+        if (!info?.orari) return (
+            <>
+                Lun - Ven: 12:00 - 15:00 / 19:00 - 23:30<br />
+                Sab - Dom: 12:00 - 23:30
+            </>
+        );
+        const { lunedi, venerdi, sabato, domenica } = info.orari;
+        return (
+            <>
+                Lun - Gio: {lunedi.f1.a} - {lunedi.f1.c} / {lunedi.f2.a} - {lunedi.f2.c}<br />
+                Ven: {venerdi.f1.a} - {venerdi.f1.c} / {venerdi.f2.a} - {venerdi.f2.c}<br />
+                Sab: {sabato.f1.a} - {sabato.f1.c} / {sabato.f2.a} - {sabato.f2.c}<br />
+                Dom: {domenica.tipo === 'continuato' ? `${domenica.f1.a} - ${domenica.f1.c}` : 'Chiuso'}
+            </>
+        );
+    };
 
     return (
         <footer className={styles.footer}>
             <div className={styles.footerInner}>
                 {/* Column 1: Restaurant Name & Description */}
                 <div className={styles.footerCol}>
-                    <div className={styles.restaurantName}>Mare Nostrum</div>
+                    <div className={styles.restaurantName}>{info?.nome || 'Mare Nostrum'}</div>
                     <div className={styles.restaurantTagline}>Ristorante di Pesce</div>
                     <p className={styles.restaurantDesc}>
-                        La tradizione del mare incontra l&apos;innovazione culinaria.
-                        Ogni piatto racconta la storia del nostro territorio,
-                        con ingredienti freschi selezionati ogni giorno.
+                        {info?.descrizione || "La tradizione del mare incontra l'innovazione culinaria."}
                     </p>
                 </div>
 
@@ -37,12 +70,8 @@ export default function Footer() {
                         title="Apri nel Navigatore"
                     >
                         <span className={styles.footerLinkIcon} style={{ transition: 'transform 0.3s' }}>📍</span>
-                        <span style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>Via del Porto 42, 00100 Roma</span>
+                        <span style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>{address}</span>
                     </a>
-                    <div className={styles.footerText}>
-                        <span className={styles.footerTextIcon}>🚗</span>
-                        Parcheggio gratuito disponibile
-                    </div>
                 </div>
 
                 {/* Column 3: Opening Hours */}
@@ -50,9 +79,8 @@ export default function Footer() {
                     <h4 className={styles.footerColTitle}>Orari</h4>
                     <div className={styles.footerText}>
                         <span className={styles.footerTextIcon}>🕐</span>
-                        <div>
-                            Lun - Ven: 12:00 - 15:00 / 19:00 - 23:00<br />
-                            Sab - Dom: 12:00 - 23:00
+                        <div style={{ fontSize: '0.85rem' }}>
+                            {renderHours()}
                         </div>
                     </div>
                 </div>
@@ -62,7 +90,7 @@ export default function Footer() {
                     <h4 className={styles.footerColTitle}>Contatti</h4>
                     <a href={`tel:+${phoneNum}`} className={styles.footerLink} title="Chiama Ora">
                         <span className={styles.footerLinkIcon}>📞</span>
-                        +39 06 1234 5678
+                        {phoneDisplay}
                     </a>
                     <a
                         href={waLink}
@@ -74,9 +102,9 @@ export default function Footer() {
                         <span className={styles.footerLinkIcon} style={{ color: '#25D366' }}>💬</span>
                         WhatsApp
                     </a>
-                    <a href="mailto:info@marenostrum.it" className={styles.footerLink}>
+                    <a href={`mailto:${email}`} className={styles.footerLink}>
                         <span className={styles.footerLinkIcon}>✉️</span>
-                        info@marenostrum.it
+                        {email}
                     </a>
                 </div>
 
@@ -84,33 +112,9 @@ export default function Footer() {
                 <div className={styles.footerCol}>
                     <h4 className={styles.footerColTitle}>Social</h4>
                     <div className={styles.socialLinks}>
-                        <a
-                            href="https://facebook.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.socialLink}
-                            aria-label="Facebook"
-                        >
-                            f
-                        </a>
-                        <a
-                            href="https://instagram.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.socialLink}
-                            aria-label="Instagram"
-                        >
-                            📷
-                        </a>
-                        <a
-                            href="https://tiktok.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.socialLink}
-                            aria-label="TikTok"
-                        >
-                            🎵
-                        </a>
+                        <a href={info?.facebook || "https://facebook.com"} target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="Facebook">f</a>
+                        <a href={info?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="Instagram">📷</a>
+                        <a href={info?.tiktok || "https://tiktok.com"} target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="TikTok">🎵</a>
                     </div>
                 </div>
             </div>
@@ -118,7 +122,7 @@ export default function Footer() {
             {/* Footer Bottom */}
             <div className={styles.footerBottom}>
                 <span className={styles.footerCopyright}>
-                    © {new Date().getFullYear()} Mare Nostrum — Tutti i diritti riservati.
+                    © {new Date().getFullYear()} {info?.nome || 'Mare Nostrum'} — Tutti i diritti riservati.
                 </span>
                 <span className={styles.footerCredits}>
                     Made with ❤️ in Italia

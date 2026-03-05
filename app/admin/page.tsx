@@ -72,20 +72,27 @@ export default function AdminPersonalePage() {
         if (!newStaff.nome || !newStaff.email || !newStaff.password) return;
         if (newStaff.password.length < 8) { alert('La password deve essere di almeno 8 caratteri.'); return; }
 
-        // In a real app, you would call a server function to create the auth user
-        // For now, we insert directly into the table (and assuming auth is handled or bypassed for demo)
-        const { error } = await supabase.from('personale').insert([{
-            nome: newStaff.nome,
-            email: newStaff.email,
-            ruolo: newStaff.ruolo,
-            status: 'attivo'
-        }]);
-
-        if (error) {
-            alert('Errore durante la creazione: ' + error.message);
-        } else {
+        // Chiamata API route server-side per creare utente autenticato
+        try {
+            const res = await fetch('/api/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: newStaff.email,
+                    password: newStaff.password,
+                    nome: newStaff.nome,
+                    ruolo: newStaff.ruolo
+                })
+            });
+            const result = await res.json();
+            if (!res.ok) {
+                alert('Errore autenticazione: ' + (result.error || 'Errore generico'));
+                return;
+            }
             setNewStaff({ nome: '', email: '', password: '', ruolo: 'cameriere' });
             fetchStaff();
+        } catch (err) {
+            alert('Errore di rete o server: ' + err.message);
         }
     };
 
@@ -107,18 +114,28 @@ export default function AdminPersonalePage() {
     /* ---- Edit modal save ---- */
     const handleEditSave = async () => {
         if (!editModal) return;
-        const { error } = await supabase.from('personale').update({
-            nome: editModal.nome,
-            email: editModal.email,
-            ruolo: editModal.ruolo,
-            status: editModal.status,
-            ore_settimanali: editModal.oreSettimanali
-        }).eq('id', editModal.id);
-
-        if (error) alert('Errore salvataggio: ' + error.message);
-        else {
+        try {
+            const res = await fetch('/api/update-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: editModal.id,
+                    email: editModal.email,
+                    nome: editModal.nome,
+                    ruolo: editModal.ruolo,
+                    password: editModal.password || '',
+                    updatePassword: !!editModal.password
+                })
+            });
+            const result = await res.json();
+            if (!res.ok) {
+                alert('Errore salvataggio: ' + (result.error || 'Errore generico'));
+                return;
+            }
             setEditModal(null);
             fetchStaff();
+        } catch (err) {
+            alert('Errore di rete o server: ' + err.message);
         }
     };
 
@@ -190,7 +207,7 @@ export default function AdminPersonalePage() {
                             </div>
                             <div>
                                 <label style={labelStyle}>Password</label>
-                                <input type="password" placeholder="Min. 8 caratteri" value={newPassword.pw1}
+                                <input type="password" placeholder="Min. 8 caratteri" value={newStaff.password}
                                     onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} style={{ width: '100%' }} />
                             </div>
                             <div>
@@ -284,6 +301,11 @@ export default function AdminPersonalePage() {
                                 <label style={labelStyle}>Email</label>
                                 <input type="email" value={editModal.email}
                                     onChange={(e) => setEditModal({ ...editModal, email: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Nuova Password</label>
+                                <input type="password" placeholder="Min. 8 caratteri" value={editModal.password || ''}
+                                    onChange={(e) => setEditModal({ ...editModal, password: e.target.value })} style={{ width: '100%' }} />
                             </div>
                         </div>
                         <div className={styles.formRow}>
