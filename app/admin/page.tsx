@@ -52,6 +52,8 @@ export default function AdminPersonalePage() {
                 created_at: item.created_at
             }));
             setStaff(mappedData);
+        } else {
+            setStaff([]);
         }
         if (error) console.error('Error fetching staff:', error);
         setLoading(false);
