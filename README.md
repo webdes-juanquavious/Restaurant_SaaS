@@ -22,18 +22,23 @@ Prima di avviare l'app, devi creare le tabelle nel tuo database Supabase:
 3. Esegui il contenuto di `supabase/migrations/20260228_auth_sync_trigger.sql` per attivare la sincronizzazione automatica degli utenti.
 4. **IMPORTANTE**: Esegui il contenuto di `supabase/migrations/20260228_advanced_rls_policies.sql` per sbloccare i permessi di scrittura per lo staff autenticato.
 
-### 3. Creazione Primo Admin
-Per creare l'utente iniziale senza passare per le email di conferma, usa lo script di seeding:
-```powershell
+### 3. Popolamento Database (Seeding)
+Dopo aver creato le tabelle, popola il database con i dati iniziali (tavoli, menu):
+```bash
+node scripts/create-initial-database.js
+```
+
+### 4. Creazione Primo Admin
+Per creare l'utente iniziale senza passare per le email di conferma:
+```bash
 node scripts/create-admin.js
 ```
 *Le credenziali di default sono: admin@mare.it / PasswordSicura123!*
 
-### 4. Deployment su Vercel (Login Live)
-Affinché il login funzioni sul sito online, **devi configurare le Environment Variables su Vercel**:
-1. Dashboard Vercel > Settings > Environment Variables.
-2. Aggiungi `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-3. Senza queste chiavi, il sito live darà errore "NetworkError" al momento del fetch.
+### 5. Deployment su Vercel (Troubleshooting)
+Se il login online non funziona (Network Error):
+1. Vai su **Settings > Environment Variables** su Vercel e aggiungi `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+2. **IMPORTANTE**: Una volta salvate, vai in **Deployments**, clicca sui tre puntini `...` dell'ultimo deployment e seleziona **Redeploy**. Un semplice refresh non basta!
 
 ---
 

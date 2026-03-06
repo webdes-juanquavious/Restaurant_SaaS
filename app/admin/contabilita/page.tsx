@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import styles from '../admin.module.css';
+import { createClient } from '@/lib/supabase';
 
 interface OrderItem {
     piatto: string;
@@ -25,56 +26,7 @@ interface DailyReport {
     tavoli: TavoloData[];
 }
 
-/* Mock data — will come from Supabase contabilita table */
-const mockReports: DailyReport[] = [
-    {
-        data: '2026-02-26', totaleGuadagno: 1250.50, numeroTavoli: 8, numeroPersone: 32,
-        tavoli: [
-            {
-                nome: 'Tavolo #1', prenotazioni: 2, persone: 6, totale: 245, ordini: [
-                    { piatto: 'Crudo di Mare', qty: 2, prezzo: 36 }, { piatto: 'Spaghetti allo Scoglio', qty: 2, prezzo: 44 },
-                    { piatto: 'Branzino al Sale', qty: 1, prezzo: 28 }, { piatto: 'Vino Bianco', qty: 3, prezzo: 15 },
-                ]
-            },
-            {
-                nome: 'Tavolo #2', prenotazioni: 1, persone: 4, totale: 180, ordini: [
-                    { piatto: 'Risotto ai Frutti di Mare', qty: 2, prezzo: 40 }, { piatto: 'Frittura di Paranza', qty: 2, prezzo: 32 },
-                    { piatto: 'Tiramisù Marinaro', qty: 4, prezzo: 32 },
-                ]
-            },
-            {
-                nome: 'Tavolo #3', prenotazioni: 1, persone: 2, totale: 92, ordini: [
-                    { piatto: 'Linguine all\'Astice', qty: 2, prezzo: 56 }, { piatto: 'Sorbetto al Limone', qty: 2, prezzo: 12 },
-                ]
-            },
-        ],
-    },
-    {
-        data: '2026-02-25', totaleGuadagno: 980, numeroTavoli: 6, numeroPersone: 24,
-        tavoli: [
-            {
-                nome: 'Tavolo #1', prenotazioni: 1, persone: 4, totale: 180, ordini: [
-                    { piatto: 'Spaghetti allo Scoglio', qty: 4, prezzo: 88 }, { piatto: 'Vino Bianco', qty: 4, prezzo: 20 },
-                ]
-            },
-            {
-                nome: 'Tavolo #4', prenotazioni: 2, persone: 8, totale: 320, ordini: [
-                    { piatto: 'Grigliata Mista', qty: 2, prezzo: 64 }, { piatto: 'Branzino al Sale', qty: 2, prezzo: 56 },
-                ]
-            },
-        ],
-    },
-    {
-        data: '2026-02-24', totaleGuadagno: 750, numeroTavoli: 5, numeroPersone: 18,
-        tavoli: [
-            {
-                nome: 'Tavolo #2', prenotazioni: 1, persone: 6, totale: 280, ordini: [
-                    { piatto: 'Risotto ai Frutti di Mare', qty: 3, prezzo: 60 }, { piatto: 'Crudo di Mare', qty: 3, prezzo: 54 },
-                ]
-            },
-        ],
-    },
-];
+// Mock data removed in favor of Supabase ordini table
 
 const labelStyle: React.CSSProperties = { display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '1px' };
 
@@ -84,18 +36,84 @@ export default function AdminContabilitaPage() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [expandedTavolo, setExpandedTavolo] = useState<string | null>(null);
+    const [reports, setReports] = useState<DailyReport[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const currentReport = mockReports.find(r => r.data === selectedDate);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('ordini')
+                .select(`
+                    *,
+                    tavoli (nome)
+                `)
+                .eq('stato', 'completato');
+
+            if (data) {
+                // Group by date
+                const grouped: { [key: string]: DailyReport } = {};
+                data.forEach(order => {
+                    const date = order.created_at.split('T')[0];
+                    if (!grouped[date]) {
+                        grouped[date] = {
+                            data: date,
+                            totaleGuadagno: 0,
+                            numeroTavoli: 0,
+                            numeroPersone: 0,
+                            tavoli: []
+                        };
+                    }
+                    grouped[date].totaleGuadagno += order.totale;
+                    
+                    // Group by table in that day
+                    let tavoloEntry = grouped[date].tavoli.find(t => t.nome === order.tavoli.nome);
+                    if (!tavoloEntry) {
+                        tavoloEntry = {
+                            nome: order.tavoli.nome,
+                            prenotazioni: 0,
+                            persone: 0,
+                            totale: 0,
+                            ordini: []
+                        };
+                        grouped[date].tavoli.push(tavoloEntry);
+                        grouped[date].numeroTavoli++;
+                    }
+                    tavoloEntry.prenotazioni++;
+                    tavoloEntry.totale += order.totale;
+                    
+                    // Map items from JSONB
+                    const items = (order.piatti as any[]) || [];
+                    items.forEach(item => {
+                        tavoloEntry!.ordini.push({
+                            piatto: item.nome,
+                            qty: item.qty || 1,
+                            prezzo: item.prezzo
+                        });
+                    });
+                });
+                setReports(Object.values(grouped).sort((a,b) => b.data.localeCompare(a.data)));
+            }
+            if (error) console.error('Error fetching orders:', error);
+            setLoading(false);
+        };
+
+        fetchOrders();
+    }, [supabase]);
+
+    const currentReport = reports.find(r => r.data === selectedDate);
 
     /* Range aggregation */
     const rangeData = useMemo(() => {
         if (dateMode !== 'range' || !dateFrom || !dateTo) return null;
-        const reports = mockReports.filter(r => r.data >= dateFrom && r.data <= dateTo);
-        const totale = reports.reduce((s, r) => s + r.totaleGuadagno, 0);
-        const persone = reports.reduce((s, r) => s + r.numeroPersone, 0);
-        const tavoli = reports.reduce((s, r) => s + r.numeroTavoli, 0);
-        return { reports, totale, persone, tavoli, giorni: reports.length };
-    }, [dateMode, dateFrom, dateTo]);
+        const filtered = reports.filter(r => r.data >= dateFrom && r.data <= dateTo);
+        const totale = filtered.reduce((s, r) => s + r.totaleGuadagno, 0);
+        const persone = filtered.reduce((s, r) => s + r.numeroPersone, 0);
+        const tavoli = filtered.reduce((s, r) => s + r.numeroTavoli, 0);
+        return { reports: filtered, totale, persone, tavoli, giorni: filtered.length };
+    }, [dateMode, dateFrom, dateTo, reports]);
 
     return (
         <>
@@ -155,7 +173,12 @@ export default function AdminContabilitaPage() {
                         </div>
 
                         <div style={{ width: '100%', overflowX: 'auto' }}>
-                            {currentReport ? (
+                            {loading ? (
+                                <div style={{ textAlign: 'center', padding: '100px' }}>
+                                    <div className="shimmer" style={{ width: '100%', height: '200px' }} />
+                                    <p style={{ marginTop: '20px' }}>Caricamento dati fiscali...</p>
+                                </div>
+                            ) : currentReport ? (
                                 <>
                                     <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', fontFamily: 'var(--font-heading)' }}>Dettaglio per Tavolo</h3>
                                     <table className={styles.dataTable}>

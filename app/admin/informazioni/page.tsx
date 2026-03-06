@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from '../admin.module.css';
+import { createClient } from '@/lib/supabase';
+
 
 export default function AdminInformazioniPage() {
     const [info, setInfo] = useState({
@@ -20,7 +22,7 @@ export default function AdminInformazioniPage() {
     // Impostazioni Generali
     const [ordinaOnline, setOrdinaOnline] = useState(true);
     const [tema, setTema] = useState('dark');
-    
+
     // Nuove Impostazioni Extra (Prenotazioni & Costi)
     const [extraSettings, setExtraSettings] = useState({
         durataDefault: 90,        // minuti
@@ -43,6 +45,80 @@ export default function AdminInformazioniPage() {
         sabato: { tipo: 'pausa-pranzo', f1: { a: '12:00', c: '15:00', ok: true }, f2: { a: '19:00', c: '01:00', ok: true } },
         domenica: { tipo: 'continuato', f1: { a: '12:00', c: '23:00', ok: true }, f2: { a: '', c: '', ok: false } },
     });
+
+    const [dbId, setDbId] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+    const supabase = createClient();
+
+    const showToast = (msg: string, ok: boolean) => {
+        setToast({ msg, ok });
+        setTimeout(() => setToast(null), 3500);
+    };
+
+    const fetchInfo = useCallback(async () => {
+        const { data, error } = await supabase.from('ristorante_info').select('*').single();
+        if (error) { console.error('Fetch error:', error); return; }
+        if (data) {
+            setDbId(data.id);
+            setInfo({
+                nome: data.nome ?? '',
+                indirizzo: data.indirizzo ?? '',
+                telefono: data.telefono ?? '',
+                email: data.email ?? '',
+                descrizione: data.descrizione ?? '',
+                facebook: data.facebook ?? '',
+                instagram: data.instagram ?? '',
+                tiktok: data.tiktok ?? '',
+                googleMapsLink: data.maps_link ?? '',
+                googleMapsEmbed: data.maps_embed ?? '',
+            });
+            if (data.orari) setOrari(data.orari);
+            if (data.extra_settings) setExtraSettings(data.extra_settings);
+        }
+    }, [supabase]);
+
+    useEffect(() => { fetchInfo(); }, [fetchInfo]);
+
+    const handleSaveGeneral = async () => {
+        if (!dbId) { showToast('ID record non trovato. Ricarica la pagina.', false); return; }
+        const { error } = await supabase.from('ristorante_info').update({
+            nome: info.nome,
+            indirizzo: info.indirizzo,
+            telefono: info.telefono,
+            email: info.email,
+            descrizione: info.descrizione,
+            facebook: info.facebook,
+            instagram: info.instagram,
+            tiktok: info.tiktok,
+            maps_link: info.googleMapsLink,
+            maps_embed: info.googleMapsEmbed,
+        }).eq('id', dbId);
+
+        if (error) { console.error('Save general error:', error); showToast('Errore: ' + error.message, false); }
+        else showToast('✅ Dati base salvati!', true);
+    };
+
+    const handleSaveOrari = async () => {
+        if (!dbId) { showToast('ID record non trovato. Ricarica la pagina.', false); return; }
+        console.log('Saving orari with dbId:', dbId, orari);
+        const { error, data } = await supabase
+            .from('ristorante_info')
+            .update({ orari })
+            .eq('id', dbId)
+            .select();
+        console.log('Save orari result:', { error, data });
+        if (error) { console.error('Save orari error:', error); showToast('Errore orari: ' + error.message, false); }
+        else showToast('✅ Orari salvati! Aggiorna il sito per vedere i cambiamenti.', true);
+    };
+
+    const handleSaveExtra = async () => {
+        if (!dbId) { showToast('ID record non trovato. Ricarica la pagina.', false); return; }
+        const { error } = await supabase.from('ristorante_info').update({
+            extra_settings: extraSettings,
+        }).eq('id', dbId);
+        if (error) { console.error('Save extra error:', error); showToast('Errore impostazioni: ' + error.message, false); }
+        else showToast('✅ Impostazioni salvate!', true);
+    };
 
     const handleThemeChange = (newTheme: string) => {
         setTema(newTheme);
@@ -93,8 +169,8 @@ export default function AdminInformazioniPage() {
                 {label}
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input 
-                    type="number" value={value} 
+                <input
+                    type="number" value={value}
                     onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                     style={{ flex: 1 }} step={unit === '€' ? '0.5' : '5'}
                 />
@@ -106,6 +182,23 @@ export default function AdminInformazioniPage() {
 
     return (
         <>
+            {/* Toast notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed', bottom: '32px', right: '32px', zIndex: 9999,
+                    padding: '14px 20px', borderRadius: 'var(--radius-md)',
+                    background: toast.ok ? 'rgba(76,175,80,0.15)' : 'rgba(239,83,80,0.15)',
+                    border: `1px solid ${toast.ok ? 'var(--color-success)' : 'var(--color-error)'}`,
+                    color: toast.ok ? 'var(--color-success)' : 'var(--color-error)',
+                    fontWeight: 600, fontSize: '0.9rem',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                    animation: 'fadeInUp 0.3s ease',
+                }}>
+                    {toast.msg}
+                </div>
+            )}
+
             <h2 className={styles.pageTitle}>Informazioni Ristorante</h2>
             <p className={styles.pageSubtitle}>Modifica le informazioni e i parametri di sistema del ristorante.</p>
 
@@ -158,16 +251,16 @@ export default function AdminInformazioniPage() {
                 </div>
                 <div style={{ marginBottom: '16px' }}>
                     <label className={styles.inputLabel}>Embed Google Maps (Iframe)</label>
-                    <textarea 
-                        value={info.googleMapsEmbed} 
-                        onChange={(e) => setInfo({ ...info, googleMapsEmbed: e.target.value })} 
-                        rows={2} 
-                        style={{ width: '100%', fontSize: '0.8rem', fontFamily: 'monospace' }} 
+                    <textarea
+                        value={info.googleMapsEmbed}
+                        onChange={(e) => setInfo({ ...info, googleMapsEmbed: e.target.value })}
+                        rows={2}
+                        style={{ width: '100%', fontSize: '0.8rem', fontFamily: 'monospace' }}
                         placeholder='<iframe src="..." ...></iframe>'
                     />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '16px' }}>
-                    <button className="btn btn-primary" style={{ padding: '10px 24px' }}>Salva Dati Base</button>
+                    <button className="btn btn-primary" style={{ padding: '10px 24px' }} onClick={handleSaveGeneral}>Salva Dati Base</button>
                 </div>
             </div>
 
@@ -179,8 +272,8 @@ export default function AdminInformazioniPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)', gap: '15px', marginBottom: '16px', padding: '0 16px' }}>
                     <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Giorno</div>
                     <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Categoria</div>
-                    <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-error)', lineHeight: 1.2 }}>Orari mattina<br/>(servizio pranzo)</div>
-                    <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-error)', lineHeight: 1.2 }}>Orari pomeriggio<br/>(servizio cena)</div>
+                    <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.2 }}>Orari mattina<br />(servizio pranzo)</div>
+                    <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.2 }}>Orari pomeriggio<br />(servizio cena)</div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -190,12 +283,12 @@ export default function AdminInformazioniPage() {
                         const isContinuo = sched.tipo === 'continuato';
 
                         return (
-                            <div 
-                                key={giorno} 
-                                style={{ 
-                                    display: 'grid', 
-                                    gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)', 
-                                    gap: '15px', 
+                            <div
+                                key={giorno}
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)',
+                                    gap: '15px',
                                     alignItems: 'center',
                                     padding: '10px 16px',
                                     background: 'rgba(255,255,255,0.02)',
@@ -206,11 +299,11 @@ export default function AdminInformazioniPage() {
                             >
                                 <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{giorniLabel[giorno]}</span>
 
-                                <select 
-                                    value={sched.tipo} 
+                                <select
+                                    value={sched.tipo}
                                     onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, tipo: e.target.value } })}
-                                    style={{ 
-                                        padding: '6px 8px', fontSize: '0.8rem', fontWeight: 600, 
+                                    style={{
+                                        padding: '6px 8px', fontSize: '0.8rem', fontWeight: 600,
                                         color: isClosed ? 'var(--color-error)' : 'var(--color-primary)',
                                         background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px'
                                     }}
@@ -226,19 +319,19 @@ export default function AdminInformazioniPage() {
                                             <input
                                                 type="time" value={sched.f1.a} disabled={!sched.f1.ok}
                                                 onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, a: e.target.value } } })}
-                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center', color: isContinuo ? 'var(--color-error)' : 'inherit', fontWeight: isContinuo ? 700 : 400 }}
+                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
                                             />
                                             <span style={{ color: 'var(--text-muted)' }}>–</span>
                                             <input
                                                 type="time" value={sched.f1.c} disabled={!sched.f1.ok}
                                                 onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, c: e.target.value } } })}
-                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center', color: isContinuo ? 'var(--color-error)' : 'inherit', fontWeight: isContinuo ? 700 : 400 }}
+                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
                                             />
                                             {!isContinuo && (
-                                                <button 
+                                                <button
                                                     onClick={() => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, ok: !sched.f1.ok } } })}
-                                                    style={{ 
-                                                        width: '32px', height: '18px', borderRadius: '10px', 
+                                                    style={{
+                                                        width: '32px', height: '18px', borderRadius: '10px',
                                                         background: sched.f1.ok ? 'var(--color-success)' : 'var(--border-color)',
                                                         border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0
                                                     }}
@@ -264,10 +357,10 @@ export default function AdminInformazioniPage() {
                                                 onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, c: e.target.value } } })}
                                                 style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
                                             />
-                                            <button 
+                                            <button
                                                 onClick={() => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, ok: !sched.f2.ok } } })}
-                                                style={{ 
-                                                    width: '32px', height: '18px', borderRadius: '10px', 
+                                                style={{
+                                                    width: '32px', height: '18px', borderRadius: '10px',
                                                     background: sched.f2.ok ? 'var(--color-success)' : 'var(--border-color)',
                                                     border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0
                                                 }}
@@ -283,7 +376,7 @@ export default function AdminInformazioniPage() {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '24px' }}>
-                    <button className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase' }}>
+                    <button className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase' }} onClick={handleSaveOrari}>
                         Salva Orari
                     </button>
                 </div>
@@ -292,29 +385,29 @@ export default function AdminInformazioniPage() {
             {/* 3. Sezione Funzionalità (Unificata) */}
             <div className={styles.formPanel}>
                 <h3 className={styles.formPanelTitle}>Funzionalità</h3>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
                     {/* Regole Tavoli */}
                     <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                         <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Regole Tavoli</h4>
-                        
+
                         <div style={{ marginBottom: '20px' }}>
                             <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                                 Durata Default Prenotazione
                             </label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                                    <input 
-                                        type="number" value={extraSettings.durataDefault} 
-                                        onChange={(v) => setExtraSettings({...extraSettings, durataDefault: parseInt(v.target.value) || 0})} 
+                                    <input
+                                        type="number" value={extraSettings.durataDefault}
+                                        onChange={(v) => setExtraSettings({ ...extraSettings, durataDefault: parseInt(v.target.value) || 0 })}
                                         style={{ width: '80px' }}
                                     />
                                     <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>min</span>
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <button
-                                        onClick={() => setExtraSettings({...extraSettings, allowManualDurationOverride: !extraSettings.allowManualDurationOverride})}
+                                        onClick={() => setExtraSettings({ ...extraSettings, allowManualDurationOverride: !extraSettings.allowManualDurationOverride })}
                                         style={{
                                             width: '36px', height: '18px', borderRadius: '9px',
                                             background: extraSettings.allowManualDurationOverride ? 'var(--color-success)' : 'var(--border-color)',
@@ -330,45 +423,45 @@ export default function AdminInformazioniPage() {
                                 </div>
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
-                                Tempo standard assegnato a un tavolo prenotato online.<br/>
+                                Tempo standard assegnato a un tavolo prenotato online.<br />
                                 <span style={{ color: extraSettings.allowManualDurationOverride ? 'var(--color-success)' : 'inherit', fontWeight: extraSettings.allowManualDurationOverride ? 600 : 400 }}>
-                                    {extraSettings.allowManualDurationOverride 
-                                        ? '✓ Il cameriere potrà modificare il tempo massimo dal lato prenotazione.' 
+                                    {extraSettings.allowManualDurationOverride
+                                        ? '✓ Il cameriere potrà modificare il tempo massimo dal lato prenotazione.'
                                         : 'Se il pulsante è attivo, si può modificare il tempo massimo dal lato di prenotazione.'}
                                 </span>
                             </div>
                         </div>
 
-                        <ToggleBtn 
-                            checked={extraSettings.isPenaleAttiva} 
-                            onChange={() => setExtraSettings({...extraSettings, isPenaleAttiva: !extraSettings.isPenaleAttiva})}
-                            label="Attiva Penale No-Show (Ritardo)" 
+                        <ToggleBtn
+                            checked={extraSettings.isPenaleAttiva}
+                            onChange={() => setExtraSettings({ ...extraSettings, isPenaleAttiva: !extraSettings.isPenaleAttiva })}
+                            label="Attiva Penale No-Show (Ritardo)"
                             desc="Ritardo massimo consentito prima di perdere il tavolo."
                         />
                         {extraSettings.isPenaleAttiva && (
                             <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginLeft: '12px', marginBottom: '20px' }}>
-                                <NumberInput 
-                                    label="Ritardo Massimo Consentito" 
-                                    value={extraSettings.penaleNoShow} 
-                                    onChange={(v) => setExtraSettings({...extraSettings, penaleNoShow: v})} 
-                                    unit="min" 
+                                <NumberInput
+                                    label="Ritardo Massimo Consentito"
+                                    value={extraSettings.penaleNoShow}
+                                    onChange={(v) => setExtraSettings({ ...extraSettings, penaleNoShow: v })}
+                                    unit="min"
                                 />
                             </div>
                         )}
 
-                        <ToggleBtn 
-                            checked={extraSettings.isSupplementoAttivo} 
-                            onChange={() => setExtraSettings({...extraSettings, isSupplementoAttivo: !extraSettings.isSupplementoAttivo})}
-                            label="Supplemento Tempo Extra" 
+                        <ToggleBtn
+                            checked={extraSettings.isSupplementoAttivo}
+                            onChange={() => setExtraSettings({ ...extraSettings, isSupplementoAttivo: !extraSettings.isSupplementoAttivo })}
+                            label="Supplemento Tempo Extra"
                             desc="Costo extra se il cliente prenota per un tempo superiore allo standard."
                         />
                         {extraSettings.isSupplementoAttivo && (
                             <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginLeft: '12px', marginBottom: '20px' }}>
-                                <NumberInput 
-                                    label="Costo Supplemento" 
-                                    value={extraSettings.supplementoExtra} 
-                                    onChange={(v) => setExtraSettings({...extraSettings, supplementoExtra: v})} 
-                                    unit="€" 
+                                <NumberInput
+                                    label="Costo Supplemento"
+                                    value={extraSettings.supplementoExtra}
+                                    onChange={(v) => setExtraSettings({ ...extraSettings, supplementoExtra: v })}
+                                    unit="€"
                                 />
                             </div>
                         )}
@@ -377,11 +470,11 @@ export default function AdminInformazioniPage() {
                     {/* Costi & Cassa */}
                     <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                         <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Costi & Cassa</h4>
-                        <NumberInput 
-                            label="Costo Coperto (a persona)" 
-                            value={extraSettings.costoCoperto} 
-                            onChange={(v) => setExtraSettings({...extraSettings, costoCoperto: v})} 
-                            unit="€" 
+                        <NumberInput
+                            label="Costo Coperto (a persona)"
+                            value={extraSettings.costoCoperto}
+                            onChange={(v) => setExtraSettings({ ...extraSettings, costoCoperto: v })}
+                            unit="€"
                             desc="Aggiunto automaticamente alla chiusura in base al numero di persone."
                         />
                     </div>
@@ -389,29 +482,29 @@ export default function AdminInformazioniPage() {
                     {/* Funzionalità Extra */}
                     <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                         <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Impostazioni Extra</h4>
-                        <ToggleBtn 
-                            checked={ordinaOnline} 
+                        <ToggleBtn
+                            checked={ordinaOnline}
                             onChange={() => setOrdinaOnline(!ordinaOnline)}
-                            label="Ordina Online Menu" 
+                            label="Ordina Online Menu"
                             desc={ordinaOnline ? 'Attivo — i clienti possono ordinare online' : 'Disattivato — il menu è solo consultabile'}
                         />
-                        <ToggleBtn 
-                            checked={extraSettings.whatsappPublic} 
-                            onChange={() => setExtraSettings({...extraSettings, whatsappPublic: !extraSettings.whatsappPublic})}
-                            label="Contatto WhatsApp" 
+                        <ToggleBtn
+                            checked={extraSettings.whatsappPublic}
+                            onChange={() => setExtraSettings({ ...extraSettings, whatsappPublic: !extraSettings.whatsappPublic })}
+                            label="Contatto WhatsApp"
                             desc="Click sul telefono apre WhatsApp."
                         />
-                        <ToggleBtn 
-                            checked={extraSettings.lavoraConNoi} 
-                            onChange={() => setExtraSettings({...extraSettings, lavoraConNoi: !extraSettings.lavoraConNoi})}
-                            label="Pagina Lavora con noi" 
+                        <ToggleBtn
+                            checked={extraSettings.lavoraConNoi}
+                            onChange={() => setExtraSettings({ ...extraSettings, lavoraConNoi: !extraSettings.lavoraConNoi })}
+                            label="Pagina Lavora con noi"
                             desc="Se attivo, mostra le offerte di lavoro."
                         />
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '32px' }}>
-                    <button className="btn btn-primary" style={{ padding: '12px 32px' }}>Salva Tutte le Funzionalità</button>
+                    <button className="btn btn-primary" style={{ padding: '12px 32px' }} onClick={handleSaveExtra}>Salva Tutte le Funzionalità</button>
                 </div>
             </div>
 

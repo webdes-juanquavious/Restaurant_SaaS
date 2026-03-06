@@ -12,6 +12,7 @@ const publicNav = [
   { href: '/prenota', label: 'Prenota' },
   { href: '/menu', label: 'Menu' },
   { href: '/contatto', label: 'Contatto' },
+  { href: '/lavora-con-noi', label: 'Lavora con Noi' },
   { href: '/login', label: 'Login' },
 ];
 

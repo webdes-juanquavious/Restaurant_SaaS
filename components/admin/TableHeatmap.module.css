@@ -1,0 +1,103 @@
+.heatmapContainer {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 32px;
+}
+
+.heatmapHeader {
+    margin-bottom: 24px;
+}
+
+.heatmapTitle {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+    color: var(--text-main);
+}
+
+.heatmapSubtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.tableGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.tableCard {
+    padding: 20px;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--transition-normal);
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.tableCard:hover {
+    transform: translateY(-5px) scale(1.02);
+}
+
+.tableId {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.tableInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.percentage {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.total {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.colorBox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.loading {
+    padding: 60px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .tableGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

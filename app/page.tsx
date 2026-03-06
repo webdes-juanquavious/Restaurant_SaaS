@@ -4,52 +4,59 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './page.module.css';
-
-/* ---- Signature dishes data ---- */
-const signatureDishes = [
-  {
-    id: 1, name: 'Crudo di Mare', badge: 'Signature', emoji: '🦐', imageUrl: '/dishes/crudo.png',
-    descrizioneHome: 'Un antipasto fresco e leggero, ideale per iniziare con il sapore del mare aperto.',
-    description: 'Selezione di pesce crudo marinato con agrumi e olio EVO.',
-    allergeni: 'Pesce, Crostacei',
-  },
-  {
-    id: 2, name: 'Carpaccio di Polpo', badge: 'Antipasti', emoji: '🐙', imageUrl: '/dishes/polpo.png',
-    descrizioneHome: 'Tenerissimo polpo aromatizzato con essenze mediterranee e olio EVO locale.',
-    description: 'Polpo cotto a bassa temperatura, con patate e olive.',
-    allergeni: 'Molluschi',
-  },
-  {
-    id: 3, name: 'Branzino al Sale', badge: 'Novità', emoji: '🐟', imageUrl: '/dishes/branzino.png',
-    descrizioneHome: 'Cotto lentamente nel sale marino integrale per mantenere intatti tutti i succhi e i sapori delicati.',
-    description: 'Branzino locale pescato all\'alba, servito con verdure al vapore.',
-    allergeni: 'Pesce',
-  },
-  {
-    id: 4, name: 'Spaghetti allo Scoglio', badge: 'Best Seller', emoji: '🍝', imageUrl: '/dishes/scoglio.png',
-    descrizioneHome: 'Il classico primo di mare della nostra tradizione locale, con pasta trafilata al bronzo.',
-    description: 'Spaghetti con cozze, vongole, gamberi e calamari.',
-    allergeni: 'Glutine, Molluschi, Crostacei',
-  },
-  {
-    id: 5, name: 'Risotto ai Frutti di Mare', badge: 'Chef Choice', emoji: '🍚', imageUrl: '/dishes/risotto.png',
-    descrizioneHome: 'Dal mare alla tavola, un risotto mantecato a regola d\'arte con un tocco di zafferano.',
-    description: 'Risotto cremoso con gamberi, cozze e zafferano.',
-    allergeni: 'Crostacei, Molluschi',
-  },
-];
+import { createClient } from '@/lib/supabase';
 
 export default function HomePage() {
+  const [signatureDishes, setSignatureDishes] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchSignatureDishes = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('menu')
+        .select('*')
+        .eq('mostra_in_home', true)
+        .eq('is_active', true)
+        .limit(5);
+
+      if (data) {
+        const mappedData = data.map(item => ({
+          id: item.id,
+          name: item.nome,
+          badge: item.categoria,
+          emoji: item.emoji_fallback,
+          imageUrl: item.image_url,
+          descrizioneHome: item.descrizione,
+          description: item.descrizione,
+          allergeni: item.allergeni
+        }));
+        setSignatureDishes(mappedData);
+      }
+      if (error) console.error('Error fetching signature dishes:', error);
+      setLoading(false);
+    };
+
+    fetchSignatureDishes();
+  }, [supabase]);
+
   const activeDish = signatureDishes[activeIndex];
 
   const getOffset = (index: number) => {
     let diff = index - activeIndex;
-    if (diff > 2) diff -= signatureDishes.length;
-    if (diff < -2) diff += signatureDishes.length;
+    const len = signatureDishes.length;
+    if (len === 0) return 0;
+
+    // Normalize diff to be within [-len/2, len/2]
+    while (diff > len / 2) diff -= len;
+    while (diff <= -len / 2) diff += len;
+
     return diff;
   };
-  
+
   // Ref for scroll animations
   const revealRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -69,7 +76,7 @@ export default function HomePage() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [loading]);
 
   const addToRefs = (el: HTMLDivElement | null) => {
     if (el && !revealRefs.current.includes(el)) {
@@ -119,7 +126,11 @@ export default function HomePage() {
         </div>
 
         <div className={`${styles.carouselContainer} reveal`} ref={addToRefs}>
-          {signatureDishes.map((dish, idx) => {
+          {loading ? (
+            <div className={styles.loadingCarousel}>
+              <div className="shimmer" style={{ width: '400px', height: '400px', borderRadius: '50%' }} />
+            </div>
+          ) : signatureDishes.length > 0 && signatureDishes.map((dish, idx) => {
             const offset = getOffset(idx);
             let translateX = 0;
             let scale = 1;
@@ -129,14 +140,10 @@ export default function HomePage() {
 
             if (offset === 0) {
               translateX = 0; scale = 1.15; zIndex = 10; opacity = 1; blur = '0px';
-            } else if (offset === -1) {
-              translateX = -160; scale = 0.85; zIndex = 5; opacity = 0.6; blur = '2px';
-            } else if (offset === 1) {
-              translateX = 160; scale = 0.85; zIndex = 5; opacity = 0.6; blur = '2px';
-            } else if (offset === -2) {
-              translateX = -280; scale = 0.65; zIndex = 1; opacity = 0.3; blur = '4px';
-            } else if (offset === 2) {
-              translateX = 280; scale = 0.65; zIndex = 1; opacity = 0.3; blur = '4px';
+            } else if (Math.abs(offset) === 1) {
+              translateX = offset * 140; scale = 0.85; zIndex = 5; opacity = 1; blur = '2px';
+            } else if (Math.abs(offset) === 2) {
+              translateX = offset * 240; scale = 0.65; zIndex = 1; opacity = 1; blur = '4px';
             }
 
             return (
@@ -157,13 +164,20 @@ export default function HomePage() {
               >
                 {dish.badge && <span className={styles.carouselBadge}>{dish.badge}</span>}
                 {dish.imageUrl ? (
-                  <div className={styles.carouselImageWrapper}>
-                    <Image 
-                      src={dish.imageUrl} 
-                      alt={dish.name} 
-                      fill 
-                      sizes="(max-width: 768px) 100vw, 400px" 
-                      priority={offset === 0}
+                  <div
+                    className={styles.carouselImageWrapper}
+                    style={{
+                      opacity: offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.7 : 0.4,
+                      filter: `blur(${blur})`,
+                      transition: 'opacity 0.6s ease, filter 0.6s ease'
+                    }}
+                  >
+                    <Image
+                      src={dish.imageUrl.startsWith('/') ? dish.imageUrl : `/${dish.imageUrl}`}
+                      alt={dish.name}
+                      fill
+                      sizes="300px"
+                      priority={true}
                       className={styles.carouselItemImg}
                       style={{ objectFit: 'cover' }}
                     />
@@ -178,27 +192,29 @@ export default function HomePage() {
 
         {/* Description Panel */}
         <div className={`${styles.dishDescriptionPanel} reveal`} ref={addToRefs}>
-          <div className={`${styles.dishDescriptionInner} glass-panel`} key={activeDish.id}>
-            <div className={styles.dishDescriptionContent} style={{ width: '100%', textAlign: 'center' }}>
-              <div className={styles.dishDescriptionTitle}>{activeDish.name}</div>
-              <p className={styles.dishDescriptionText} style={{ marginBottom: '16px', fontSize: '1.2rem', color: 'var(--color-primary)' }}>
-                {activeDish.descrizioneHome}
-              </p>
-              
-              <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '24px' }}>
-                <div style={{ flex: 1, minWidth: '200px', textAlign: 'left', background: 'var(--bg-body)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-                  <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px', letterSpacing: '1px' }}>Ingredienti</h4>
-                  <p style={{ fontSize: '0.95rem' }}>{activeDish.description}</p>
-                </div>
-                {activeDish.allergeni && (
+          {!loading && activeDish && (
+            <div className={`${styles.dishDescriptionInner} glass-panel`} key={activeDish.id}>
+              <div className={styles.dishDescriptionContent} style={{ width: '100%', textAlign: 'center' }}>
+                <div className={styles.dishDescriptionTitle}>{activeDish.name}</div>
+                <p className={styles.dishDescriptionText} style={{ marginBottom: '16px', fontSize: '1.2rem', color: 'var(--color-primary)' }}>
+                  {activeDish.descrizioneHome}
+                </p>
+
+                <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '24px' }}>
                   <div style={{ flex: 1, minWidth: '200px', textAlign: 'left', background: 'var(--bg-body)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-                    <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--color-warning)', marginBottom: '12px', letterSpacing: '1px' }}>Allergeni</h4>
-                    <p style={{ fontSize: '0.95rem' }}>{activeDish.allergeni}</p>
+                    <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px', letterSpacing: '1px' }}>Ingredienti</h4>
+                    <p style={{ fontSize: '0.95rem' }}>{activeDish.description}</p>
                   </div>
-                )}
+                  {activeDish.allergeni && (
+                    <div style={{ flex: 1, minWidth: '200px', textAlign: 'left', background: 'var(--bg-body)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                      <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--color-warning)', marginBottom: '12px', letterSpacing: '1px' }}>Allergeni</h4>
+                      <p style={{ fontSize: '0.95rem' }}>{activeDish.allergeni}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -213,10 +229,10 @@ export default function HomePage() {
           <div className={`${styles.chefImageWrapper} animate-float`}>
             <div className={styles.chefImageFrame}>
               <div className={styles.chefImage}>
-                <img 
-                  src="/staff/chef.png" 
-                  alt="Chef Marco Marinetti" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                <img
+                  src="/staff/chef.png"
+                  alt="Chef Marco Marinetti"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
             </div>
@@ -244,30 +260,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ WORK WITH US PREVIEW ============ */}
-      <section className={styles.workWithUsPreview}>
-        <div className="container reveal" ref={addToRefs} style={{ textAlign: 'center', padding: '80px 0' }}>
-          <div className="glass-panel" style={{ padding: '60px', display: 'flex', alignItems: 'center', gap: '40px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '300px' }}>
-              <img 
-                src="https://images.unsplash.com/photo-1541532713592-79a0317b628f?auto=format&fit=crop&w=800&q=80" 
-                alt="Waiter Service" 
-                style={{ width: '100%', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} 
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: '300px', textAlign: 'left' }}>
-              <h2 className="section-title" style={{ textAlign: 'left', fontSize: '2.5rem' }}>Lavora con Noi</h2>
-              <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                Entra a far parte della nostra squadra. Cerchiamo persone appassionate per la sala e la cucina.
-                Scopri le posizioni aperte e invia la tua candidatura.
-              </p>
-              <Link href="/lavora-con-noi" className="btn btn-primary">
-                Posizioni Aperte
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      // ...existing code...
     </>
   );
 }

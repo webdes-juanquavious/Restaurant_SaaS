@@ -1,0 +1,149 @@
+.insightsContainer {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+}
+
+.insightsHeader {
+    margin-bottom: 24px;
+}
+
+.insightsTitle {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+    color: var(--text-main);
+}
+
+.insightsSubtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.trendsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.trendItem {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: all var(--transition-normal);
+}
+
+.trendItem:hover {
+    border-color: var(--color-primary-low);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rankBadge {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    width: 40px;
+    text-align: center;
+}
+
+.dishImage {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0 16px;
+    background: var(--bg-body);
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 1.5rem;
+}
+
+.dishInfo {
+    flex: 1;
+}
+
+.dishName {
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+    color: var(--text-main);
+}
+
+.dishCategory {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.85rem;
+}
+
+.rating {
+    color: #ffca28;
+    font-weight: 600;
+}
+
+.feedback {
+    color: var(--text-muted);
+}
+
+.suggestion {
+    padding-left: 16px;
+}
+
+.tagHigh {
+    padding: 4px 10px;
+    background: rgba(255, 82, 82, 0.1);
+    color: #ff5252;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.tagGrowing {
+    padding: 4px 10px;
+    background: rgba(76, 175, 80, 0.1);
+    color: #4caf50;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.businessTip {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px dashed var(--color-primary);
+    border-radius: var(--radius-md);
+    align-items: center;
+}
+
+.tipIcon {
+    font-size: 1.5rem;
+}
+
+.tipContent {
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.loading {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+}

@@ -1,16 +1,49 @@
+'use client';
+
 import styles from './contatto.module.css';
+import { createClient } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 
 export default function ContattoPage() {
-    // Intent links
-    const phoneNum = "390612345678";
-    const phoneDisplay = "+39 06 1234 5678";
-    const address = "Via del Porto 42, 00100 Roma, Italia";
-    
-    // Universal maps link (opens Google Maps app on mobile if installed, otherwise web)
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-    
+    const [info, setInfo] = useState<any>(null);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchInfo = async () => {
+            const { data } = await supabase.from('ristorante_info').select('*').single();
+            if (data) setInfo(data);
+        };
+        fetchInfo();
+    }, [supabase]);
+
+    // Defaults
+    const phoneDisplay = info?.telefono || "+39 06 1234 5678";
+    const phoneNum = phoneDisplay.replace(/\D/g, '');
+    const address = info?.indirizzo || "Via del Porto 42, 00100 Roma, Italia";
+
+    // Universal maps link
+    const mapsLink = info?.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
     // WhatsApp direct link
     const waLink = `https://wa.me/${phoneNum}`;
+
+    const renderHours = () => {
+        if (!info?.orari) return (
+            <>
+                Lunedì – Venerdì: 12:00 – 15:00 / 19:00 – 23:00<br />
+                Sabato – Domenica: 12:00 – 23:00
+            </>
+        );
+        const { lunedi, venerdi, sabato, domenica } = info.orari;
+        return (
+            <>
+                Lun - Gio: {lunedi.f1.a} - {lunedi.f1.c} / {lunedi.f2.a} - {lunedi.f2.c}<br />
+                Venerdì: {venerdi.f1.a} - {venerdi.f1.c} / {venerdi.f2.a} - {venerdi.f2.c}<br />
+                Sabato: {sabato.f1.a} - {sabato.f1.c} / {sabato.f2.a} - {sabato.f2.c}<br />
+                Domenica: {domenica.tipo === 'continuato' ? `${domenica.f1.a} - ${domenica.f1.c}` : 'Chiuso'}
+            </>
+        );
+    };
 
     return (
         <div className={styles.contattoPage}>
@@ -31,7 +64,7 @@ export default function ContattoPage() {
                     <div className={`${styles.infoItem} glass-panel`} style={{ padding: '20px', marginBottom: '16px' }}>
                         <div className={styles.infoIcon}>🐟</div>
                         <div className={styles.infoContent}>
-                            <div className={styles.infoLabel}>Mare Nostrum</div>
+                            <div className={styles.infoLabel}>{info?.nome || 'Mare Nostrum'}</div>
                             <div className={styles.infoValue}>Ristorante di Pesce</div>
                         </div>
                     </div>
@@ -53,8 +86,7 @@ export default function ContattoPage() {
                         <div className={styles.infoContent}>
                             <div className={styles.infoLabel}>Orari di Apertura</div>
                             <div className={styles.infoValue}>
-                                Lunedì – Venerdì: 12:00 – 15:00 / 19:00 – 23:00<br />
-                                Sabato – Domenica: 12:00 – 23:00
+                                {renderHours()}
                             </div>
                         </div>
                     </div>
@@ -87,15 +119,9 @@ export default function ContattoPage() {
                         <div className={styles.infoContent}>
                             <div className={styles.infoLabel}>Seguici sui Social</div>
                             <div className={styles.socialRow}>
-                                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Facebook">
-                                    f
-                                </a>
-                                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Instagram">
-                                    📷
-                                </a>
-                                <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="TikTok">
-                                    🎵
-                                </a>
+                                <a href={info?.facebook || "https://facebook.com"} target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Facebook">f</a>
+                                <a href={info?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Instagram">📷</a>
+                                <a href={info?.tiktok || "https://tiktok.com"} target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="TikTok">🎵</a>
                             </div>
                         </div>
                     </div>
@@ -104,15 +130,19 @@ export default function ContattoPage() {
                 {/* Map Column */}
                 <div className={styles.mapColumn}>
                     <div className="glass-panel" style={{ padding: '8px', height: '100%' }}>
-                        <iframe
-                            className={styles.mapIframe}
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2969.123456789!2d12.4963655!3d41.9027835!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDHCsDU0JzEwLjAiTiAxMsKwMjknNDYuOSJF!5e0!3m2!1sit!2sit!4v1234567890"
-                            allowFullScreen
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                            title="Posizione Mare Nostrum Ristorante"
-                            style={{ borderRadius: 'var(--radius-md)' }}
-                        />
+                        {info?.maps_embed ? (
+                            <div dangerouslySetInnerHTML={{ __html: info.maps_embed.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"') }} style={{ height: '100%' }} />
+                        ) : (
+                            <iframe
+                                className={styles.mapIframe}
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2969.123456789!2d12.4963655!3d41.9027835!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDHCsDU0JzEwLjAiTiAxMsKwMjknNDYuOSJF!5e0!3m2!1sit!2sit!4v1234567890"
+                                allowFullScreen
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                title="Posizione Mare Nostrum Ristorante"
+                                style={{ borderRadius: 'var(--radius-md)' }}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
