@@ -42,7 +42,7 @@ const colors = ['#e67e22', '#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#1abc9c'
 export default function AdminTavoliPage() {
     const today = new Date().toISOString().split('T')[0];
     const [activeMainTab, setActiveMainTab] = useState<'prenotazioni' | 'gestione'>('prenotazioni');
-    
+
     const [tavoli, setTavoli] = useState<Tavolo[]>([]);
     const [prenotazioni, setPrenotazioni] = useState<Prenotazione[]>([]);
     const [loading, setLoading] = useState(true);
@@ -154,8 +154,8 @@ export default function AdminTavoliPage() {
     };
 
     const getPrenotazioniForDate = (date: string) => prenotazioni.filter(p => p.data === date);
-    const getPrenotazioniForTavolo = (tavoloId: number, date: string) => prenotazioni.filter(p => p.tavoloId === tavoloId && p.data === date);
-    const getTotaleForTavolo = (tavoloId: number, date: string) => getPrenotazioniForTavolo(tavoloId, date).filter(p => p.status === 'confermata').reduce((sum, p) => sum + p.totale, 0);
+    const getPrenotazioniForTavolo = (tavoloId: string, date: string) => prenotazioni.filter(p => p.tavoloId === tavoloId && p.data === date);
+    const getTotaleForTavolo = (tavoloId: string, date: string) => getPrenotazioniForTavolo(tavoloId, date).filter(p => p.status === 'confermata').reduce((sum, p) => sum + p.totale, 0);
 
     /* ---- Calendar logic ---- */
     const calendarDays = useMemo(() => {
@@ -214,7 +214,7 @@ export default function AdminTavoliPage() {
         <>
             {/* BIG CARDS NAVIGATION - PREMIUM STYLE */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div 
+                <div
                     className={`${styles.tabHeaderBox} ${activeMainTab === 'prenotazioni' ? styles.tabHeaderBoxActive : ''}`}
                     onClick={() => setActiveMainTab('prenotazioni')}
                     style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
@@ -222,8 +222,8 @@ export default function AdminTavoliPage() {
                     <h2 style={{ fontSize: '1.5rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>Gestione Prenotazioni</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0 }}>Visualizza lo stato giornaliero, conferma o annulla le prenotazioni.</p>
                 </div>
-                
-                <div 
+
+                <div
                     className={`${styles.tabHeaderBox} ${activeMainTab === 'gestione' ? styles.tabHeaderBoxActive : ''}`}
                     onClick={() => setActiveMainTab('gestione')}
                     style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
@@ -283,9 +283,9 @@ export default function AdminTavoliPage() {
                             ) : (
                                 <>
                                     <div style={{ display: 'flex', gap: '24px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '0.88rem' }}>🪑 <strong>{new Set(dayPrenotazioni.filter(p=>p.status==='confermata').map(p => p.tavoloId)).size}</strong> tavoli attivi</span>
-                                        <span style={{ fontSize: '0.88rem' }}>👥 <strong>{dayPrenotazioni.filter(p=>p.status==='confermata').reduce((s, p) => s + p.persone, 0)}</strong> persone confermate</span>
-                                        <span style={{ fontSize: '0.88rem', color: 'var(--color-primary)', fontWeight: 600 }}>💰 €{dayPrenotazioni.filter(p=>p.status==='confermata').reduce((s, p) => s + p.totale, 0).toFixed(0)}</span>
+                                        <span style={{ fontSize: '0.88rem' }}>🪑 <strong>{new Set(dayPrenotazioni.filter(p => p.status === 'confermata').map(p => p.tavoloId)).size}</strong> tavoli attivi</span>
+                                        <span style={{ fontSize: '0.88rem' }}>👥 <strong>{dayPrenotazioni.filter(p => p.status === 'confermata').reduce((s, p) => s + p.persone, 0)}</strong> persone confermate</span>
+                                        <span style={{ fontSize: '0.88rem', color: 'var(--color-primary)', fontWeight: 600 }}>💰 €{dayPrenotazioni.filter(p => p.status === 'confermata').reduce((s, p) => s + p.totale, 0).toFixed(0)}</span>
                                     </div>
 
                                     <table className={styles.dataTable}>
@@ -300,7 +300,7 @@ export default function AdminTavoliPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dayPrenotazioni.sort((a,b)=>a.orario.localeCompare(b.orario)).map(p => {
+                                            {dayPrenotazioni.sort((a, b) => a.orario.localeCompare(b.orario)).map(p => {
                                                 const tavolo = tavoli.find(t => t.id === p.tavoloId);
                                                 return (
                                                     <tr key={p.id} style={{ opacity: p.status !== 'confermata' ? 0.6 : 1 }}>
@@ -321,8 +321,8 @@ export default function AdminTavoliPage() {
                                                         <td>
                                                             {p.status === 'confermata' && (
                                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                                     <button className={styles.actionBtn} style={{ background: 'var(--bg-surface-elevated)' }} onClick={() => handleStatusChange(p.id, 'annullata')}>
-                                                                         Annulla
+                                                                    <button className={styles.actionBtn} style={{ background: 'var(--bg-surface-elevated)' }} onClick={() => handleStatusChange(p.id, 'annullata')}>
+                                                                        Annulla
                                                                     </button>
                                                                     <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleStatusChange(p.id, 'no-show')}>
                                                                         No-Show
@@ -349,13 +349,13 @@ export default function AdminTavoliPage() {
                     {calendarMode === 'range' && rangeStart && rangeEnd && (
                         <div className={styles.formPanel}>
                             <h3 className={styles.formPanelTitle}>📊 Prenotazioni Confermate dal {rangeStart} al {rangeEnd}</h3>
-                            {rangePrenotazioni.filter(p=>p.status==='confermata').length === 0 ? (
+                            {rangePrenotazioni.filter(p => p.status === 'confermata').length === 0 ? (
                                 <p style={{ color: 'var(--text-muted)', padding: '24px 0', textAlign: 'center' }}>Nessuna prenotazione confermata nel periodo.</p>
                             ) : (
                                 <>
                                     <div className={styles.bookingTimeline}>
                                         {tavoli.map((tavolo, ti) => {
-                                            const tavoloBookings = rangePrenotazioni.filter(p => p.tavoloId === tavolo.id && p.status==='confermata');
+                                            const tavoloBookings = rangePrenotazioni.filter(p => p.tavoloId === tavolo.id && p.status === 'confermata');
                                             const tavoloTotale = tavoloBookings.reduce((s, p) => s + p.totale, 0);
                                             if (tavoloBookings.length === 0) return null;
                                             return (
@@ -408,7 +408,7 @@ export default function AdminTavoliPage() {
                         <div className={styles.summaryItem}>
                             <span className={styles.summaryIcon}>✅</span>
                             <div>
-                                <div className={styles.summaryValue}>{tavoli.filter(t => t.status === 'active').length}</div>
+                                <div className={styles.summaryValue}>{tavoli.filter(t => t.status === 'attivo').length}</div>
                                 <div className={styles.summaryLabel}>Attivi</div>
                             </div>
                         </div>
@@ -435,7 +435,7 @@ export default function AdminTavoliPage() {
                         </thead>
                         <tbody>
                             {tavoli.map((t) => {
-                                const prenOggi = getPrenotazioniForTavolo(t.id, today).filter(p=>p.status==='confermata');
+                                const prenOggi = getPrenotazioniForTavolo(t.id, today).filter(p => p.status === 'confermata');
                                 const totaleOggi = prenOggi.reduce((sum, p) => sum + p.totale, 0);
                                 return (
                                     <tr key={t.id}>

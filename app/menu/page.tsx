@@ -108,8 +108,8 @@ export default function MenuPage() {
                         <div key={item.id} className={styles.menuCard}>
                             <div className={styles.menuCardImageContainer}>
                                 {item.imageUrl ? (
-                                    <Image 
-                                        src={item.imageUrl.startsWith('http') || item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`} 
+                                    <Image
+                                        src={item.imageUrl.startsWith('http') || item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`}
                                         alt={item.name}
                                         fill
                                         sizes="(max-width: 768px) 100vw, 300px"
@@ -129,7 +129,7 @@ export default function MenuPage() {
                                 <div className={styles.menuCardFooter}>
                                     <span className={styles.menuCardPrice}>€{item.price.toFixed(2)}</span>
                                     <div className={styles.menuCardTags}>
-                                        {item.tags.map((tag) => (
+                                        {item.tags.map((tag: string) => (
                                             <span key={tag} className={styles.menuCardTag}>{tag}</span>
                                         ))}
                                     </div>
