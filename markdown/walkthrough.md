@@ -8,6 +8,20 @@ Abbiamo arricchito il sistema con nuove funzionalità per la gestione delle info
 - **Integrazione Maps**: Aggiunti campi per il Link di Google Maps e l'Iframe Embed nei Dati Base.
 - **Override Durata**: Implementato un toggle in "Regole Tavoli" che abilita/disabilita la possibilità per i camerieri di modificare manualmente la durata di una prenotazione durante l'inserimento.
 
+### Admin Dashboard Restructuring & Table Management
+- **Navigation Labels**: Updated header and page titles (Info, Contabilità).
+- **Accounting & Personnel**: Moved analytics to Accounting and added Attendance Registry to Personnel.
+- **Table Management**:
+    - Fixed schema error by adding `nome`, `numero` columns and ID defaults.
+    - Updated list view with actions: Modifica, Sospendi, Elimina, Conto.
+- **Booking Management**:
+    - Implemented a **Timeline View** (12:00 - 24:00) for better visualization of daily bookings.
+    - Added **Nuova Prenotazione** functionality with a modal for direct database entry.
+    - Summary of active tables and people for the selected day.
+
+![Timeline View](file:///C:/Users/ora/.gemini/antigravity/brain/f2b5bada-c382-4fcb-9163-c7e473fcb094/gestione_prenotazioni_timeline_1773063633081.png)
+![Management Table](file:///C:/Users/ora/.gemini/antigravity/brain/f2b5bada-c382-4fcb-9163-c7e473fcb094/gestione_tavoli_updated_1773063657259.png)
+
 ### 2. Dipendenti: Planner Grafico & Inserimento Manuale
 - **Vista Planner (Gantt)**: La lista delle prenotazioni è stata trasformata in una vista temporale a fasi.
     - Le prenotazioni sono raggruppate per tavolo (asse Y).

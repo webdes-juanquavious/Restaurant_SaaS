@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase';
 
 /* ---- Types ---- */
 interface Tavolo {
-    id: string; // Changed to string for UUID
+    id: string;
     numero: number;
     nome: string;
     posti: number;
@@ -14,15 +14,16 @@ interface Tavolo {
 }
 
 interface Prenotazione {
-    id: string; // UUID
-    tavoloId: string; // UUID
+    id: string;
+    tavoloId: string;
+    cliente: string;
+    telefono?: string;
+    email?: string;
+    persone: number;
     data: string;
     orario: string;
-    cliente: string;
-    telefono: string;
-    persone: number;
+    status: 'confermata' | 'annullata';
     totale: number;
-    status: 'confermata' | 'annullata' | 'no-show';
 }
 
 const labelStyle: React.CSSProperties = { display: 'block', marginBottom: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.5px' };
@@ -48,6 +49,21 @@ export default function AdminTavoliPage() {
     const [loading, setLoading] = useState(true);
     const [newTavolo, setNewTavolo] = useState({ nome: '', posti: '4', numero: '' });
 
+    // New Booking Modal State
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [bookingForm, setBookingForm] = useState({
+        cliente: '',
+        telefono: '',
+        email: '',
+        persone: '2',
+        data: today,
+        orario: '12:00',
+        tavoloId: ''
+    });
+    const [bookingError, setBookingError] = useState('');
+
+    const [detailsModal, setDetailsModal] = useState<Prenotazione | null>(null);
+
     const supabase = createClient();
 
     const fetchAllData = async () => {
@@ -72,7 +88,8 @@ export default function AdminTavoliPage() {
                 orario: p.orario,
                 cliente: p.cliente_nome,
                 telefono: p.cliente_telefono,
-                persone: p.persone,
+                email: p.cliente_email,
+                persone: p.numero_persone,
                 totale: 0, // Not in schema, fallback to 0 or calculate if needed
                 status: p.stato
             })));
@@ -140,6 +157,41 @@ export default function AdminTavoliPage() {
         if (error) alert('Errore salvataggio: ' + error.message);
         else {
             setEditModal(null);
+            fetchAllData();
+        }
+    };
+
+    const handleNewBooking = async () => {
+        if (!bookingForm.cliente || !bookingForm.tavoloId) {
+            setBookingError('Inserisci nome cliente e seleziona un tavolo.');
+            return;
+        }
+
+        const { error } = await supabase.from('prenotazioni').insert([{
+            data: bookingForm.data,
+            ora: bookingForm.orario,
+            tavolo_id: bookingForm.tavoloId,
+            cliente_nome: bookingForm.cliente,
+            cliente_email: bookingForm.email,
+            cliente_telefono: bookingForm.telefono,
+            numero_persone: parseInt(bookingForm.persone),
+            stato: 'confermata'
+        }]);
+
+        if (error) {
+            setBookingError('Errore salvataggio: ' + error.message);
+        } else {
+            setIsBookingModalOpen(false);
+            setBookingForm({
+                cliente: '',
+                telefono: '',
+                email: '',
+                persone: '2',
+                data: today,
+                orario: '12:00',
+                tavoloId: ''
+            });
+            setBookingError('');
             fetchAllData();
         }
     };
@@ -271,77 +323,120 @@ export default function AdminTavoliPage() {
                         </div>
                     </div>
 
-                    {/* DAY VIEW */}
+                    {/* DAY VIEW - TIMELINE */}
                     {calendarMode === 'giorno' && viewDate && (
                         <div className={styles.formPanel}>
-                            <h3 className={styles.formPanelTitle}>
-                                {isToday(viewDate) ? '📅 Prenotazioni di Oggi' : isPast(viewDate) ? `📖 Storico — ${viewDate}` : `📋 Prenotazioni Future — ${viewDate}`}
-                            </h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                <h3 className={styles.formPanelTitle} style={{ margin: 0 }}>
+                                    {isToday(viewDate) ? '📅 Prenotazioni di Oggi' : isPast(viewDate) ? `📖 Storico — ${viewDate}` : `📋 Prenotazioni Future — ${viewDate}`}
+                                </h3>
+                                {(isToday(viewDate) || !isPast(viewDate)) && (
+                                    <button
+                                        onClick={() => { setBookingForm(prev => ({ ...prev, data: viewDate })); setIsBookingModalOpen(true); }}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #d4b483, #aa8b56)',
+                                            color: '#0a1f1f',
+                                            borderRadius: '50px',
+                                            padding: '16px 32px',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '2px',
+                                            fontWeight: 700,
+                                            border: 'none',
+                                            boxShadow: '0 8px 15px rgba(0,0,0,0.3)',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        + Nuova Prenotazione
+                                    </button>
+                                )}
+                            </div>
 
-                            {dayPrenotazioni.length === 0 ? (
-                                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>Nessuna prenotazione per questa data.</p>
-                            ) : (
-                                <>
-                                    <div style={{ display: 'flex', gap: '24px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '0.88rem' }}>🪑 <strong>{new Set(dayPrenotazioni.filter(p => p.status === 'confermata').map(p => p.tavoloId)).size}</strong> tavoli attivi</span>
-                                        <span style={{ fontSize: '0.88rem' }}>👥 <strong>{dayPrenotazioni.filter(p => p.status === 'confermata').reduce((s, p) => s + p.persone, 0)}</strong> persone confermate</span>
-                                        <span style={{ fontSize: '0.88rem', color: 'var(--color-primary)', fontWeight: 600 }}>💰 €{dayPrenotazioni.filter(p => p.status === 'confermata').reduce((s, p) => s + p.totale, 0).toFixed(0)}</span>
+                            <div style={{ display: 'flex', gap: '24px', marginBottom: '32px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.9rem' }}>🪑 <strong>{tavoli.filter(t => t.status === 'attivo').length}</strong> tavoli attivi</span>
+                                <span style={{ fontSize: '0.9rem' }}>👥 <strong>{dayPrenotazioni.filter(p => p.status === 'confermata').reduce((s, p) => s + p.persone, 0)}</strong> persone</span>
+                            </div>
+
+                            <div style={{ overflowX: 'auto', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid var(--border-color)' }}>
+                                <div style={{ minWidth: '1000px' }}>
+                                    {/* Timeline Header */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                                        <div style={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Tavolo</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(13, 1fr)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
+                                            {['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'].map(h => <div key={h}>{h}</div>)}
+                                        </div>
                                     </div>
 
-                                    <table className={styles.dataTable}>
-                                        <thead>
-                                            <tr>
-                                                <th>Tavolo</th>
-                                                <th>Orario</th>
-                                                <th>Cliente & Recapito</th>
-                                                <th>Persone</th>
-                                                <th>Status</th>
-                                                <th>Azioni</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {dayPrenotazioni.sort((a, b) => a.orario.localeCompare(b.orario)).map(p => {
-                                                const tavolo = tavoli.find(t => t.id === p.tavoloId);
-                                                return (
-                                                    <tr key={p.id} style={{ opacity: p.status !== 'confermata' ? 0.6 : 1 }}>
-                                                        <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{tavolo?.nome || '?'}</td>
-                                                        <td style={{ fontWeight: 600 }}>{p.orario}</td>
-                                                        <td>
-                                                            <div style={{ fontWeight: 600 }}>{p.cliente}</div>
-                                                            {p.telefono && (
-                                                                <a href={`tel:${p.telefono}`} style={{ fontSize: '0.8rem', color: 'var(--color-info)' }}>{p.telefono}</a>
-                                                            )}
-                                                        </td>
-                                                        <td>{p.persone}</td>
-                                                        <td>
-                                                            {p.status === 'confermata' && <span className={`${styles.statusBadge} ${styles.statusActive}`}>Confermata</span>}
-                                                            {p.status === 'no-show' && <span className={`${styles.statusBadge} ${styles.statusSuspended}`}>No-Show</span>}
-                                                            {p.status === 'annullata' && <span className={`${styles.statusBadge} ${styles.statusSuspended}`}>Annullata</span>}
-                                                        </td>
-                                                        <td>
-                                                            {p.status === 'confermata' && (
-                                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                                    <button className={styles.actionBtn} style={{ background: 'var(--bg-surface-elevated)' }} onClick={() => handleStatusChange(p.id, 'annullata')}>
-                                                                        Annulla
-                                                                    </button>
-                                                                    <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleStatusChange(p.id, 'no-show')}>
-                                                                        No-Show
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            {p.status !== 'confermata' && (
-                                                                <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={() => handleStatusChange(p.id, 'confermata')}>
-                                                                    Ripristina
-                                                                </button>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </>
-                            )}
+                                    {/* Timeline Rows */}
+                                    {tavoli.map((t, ti) => {
+                                        const tBookings = dayPrenotazioni.filter(p => p.tavoloId === t.id);
+                                        return (
+                                            <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', borderBottom: '1px solid var(--border-color-light)', padding: '12px 0', minHeight: '60px', position: 'relative' }}>
+                                                <div style={{ paddingRight: '12px' }}>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.nome}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.posti} posti</div>
+                                                </div>
+                                                <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(13, 1fr)' }}>
+                                                    {/* Vertical Guidelines */}
+                                                    {Array.from({ length: 13 }).map((_, i) => (
+                                                        <div key={i} style={{ borderLeft: '1px solid rgba(255,255,255,0.03)', height: '100%' }} />
+                                                    ))}
+
+                                                    {/* Booking Blocks */}
+                                                    {tBookings.map(b => {
+                                                        const [hour, min] = b.orario.split(':').map(Number);
+                                                        const startMinutes = hour * 60 + min;
+                                                        const timelineStart = 12 * 60;
+                                                        const timelineEnd = 24 * 60;
+
+                                                        if (startMinutes < timelineStart || startMinutes > timelineEnd) return null;
+
+                                                        const leftPct = ((startMinutes - timelineStart) / (timelineEnd - timelineStart)) * 100;
+                                                        const widthPct = (90 / (timelineEnd - timelineStart)) * 100; // 90 min fixed for visual representation
+
+                                                        return (
+                                                            <div
+                                                                key={b.id}
+                                                                onClick={() => setDetailsModal(b)}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    left: `${leftPct}%`,
+                                                                    width: `${widthPct}%`,
+                                                                    minWidth: '100px',
+                                                                    height: '42px',
+                                                                    background: b.status === 'confermata' ? 'var(--color-primary)' : 'var(--bg-surface)',
+                                                                    border: b.status === 'confermata' ? 'none' : '1px dashed var(--border-color)',
+                                                                    borderRadius: '8px',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: 600,
+                                                                    color: b.status === 'confermata' ? 'var(--text-on-primary)' : 'var(--text-muted)',
+                                                                    cursor: 'pointer',
+                                                                    zIndex: 10,
+                                                                    boxShadow: b.status === 'confermata' ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+                                                                    opacity: b.status === 'confermata' ? 1 : 0.6,
+                                                                    overflow: 'hidden',
+                                                                    whiteSpace: 'nowrap',
+                                                                    padding: '0 8px',
+                                                                    lineHeight: '1.2'
+                                                                }}
+                                                                title={`${b.cliente} (${b.persone} persone) at ${b.orario}`}
+                                                            >
+                                                                <div style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{b.cliente}</div>
+                                                                <div style={{ fontSize: '0.65rem', opacity: 0.8 }}>👥 {b.persone} persone</div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -352,39 +447,37 @@ export default function AdminTavoliPage() {
                             {rangePrenotazioni.filter(p => p.status === 'confermata').length === 0 ? (
                                 <p style={{ color: 'var(--text-muted)', padding: '24px 0', textAlign: 'center' }}>Nessuna prenotazione confermata nel periodo.</p>
                             ) : (
-                                <>
-                                    <div className={styles.bookingTimeline}>
-                                        {tavoli.map((tavolo, ti) => {
-                                            const tavoloBookings = rangePrenotazioni.filter(p => p.tavoloId === tavolo.id && p.status === 'confermata');
-                                            const tavoloTotale = tavoloBookings.reduce((s, p) => s + p.totale, 0);
-                                            if (tavoloBookings.length === 0) return null;
-                                            return (
-                                                <div key={tavolo.id} className={styles.bookingRow}>
-                                                    <span className={styles.bookingRowLabel}>{tavolo.nome}</span>
-                                                    <div className={styles.bookingRowBar}>
-                                                        {tavoloBookings.map((b, bi) => {
-                                                            const totalDays = Math.max(1, Math.ceil((new Date(rangeEnd).getTime() - new Date(rangeStart).getTime()) / 86400000) + 1);
-                                                            const dayIndex = Math.ceil((new Date(b.data).getTime() - new Date(rangeStart).getTime()) / 86400000);
-                                                            const left = (dayIndex / totalDays) * 100;
-                                                            const width = Math.max(100 / totalDays, 4);
-                                                            return (
-                                                                <div
-                                                                    key={bi}
-                                                                    className={styles.bookingBlock}
-                                                                    style={{ left: `${left}%`, width: `${width}%`, background: colors[ti % colors.length] }}
-                                                                    title={`${b.data} ${b.orario} — ${b.cliente} — €${b.totale}`}
-                                                                />
-                                                            );
-                                                        })}
-                                                    </div>
-                                                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-primary)', minWidth: '60px', textAlign: 'right' }}>
-                                                        €{tavoloTotale}
-                                                    </span>
+                                <div className={styles.bookingTimeline}>
+                                    {tavoli.map((tavolo, ti) => {
+                                        const tavoloBookings = rangePrenotazioni.filter(p => p.tavoloId === tavolo.id && p.status === 'confermata');
+                                        const tavoloTotale = tavoloBookings.reduce((s, p) => s + p.totale, 0);
+                                        if (tavoloBookings.length === 0) return null;
+                                        return (
+                                            <div key={tavolo.id} className={styles.bookingRow}>
+                                                <span className={styles.bookingRowLabel}>{tavolo.nome}</span>
+                                                <div className={styles.bookingRowBar}>
+                                                    {tavoloBookings.map((b, bi) => {
+                                                        const totalDays = Math.max(1, Math.ceil((new Date(rangeEnd).getTime() - new Date(rangeStart).getTime()) / 86400000) + 1);
+                                                        const dayIndex = Math.ceil((new Date(b.data).getTime() - new Date(rangeStart).getTime()) / 86400000);
+                                                        const left = (dayIndex / totalDays) * 100;
+                                                        const width = Math.max(100 / totalDays, 4);
+                                                        return (
+                                                            <div
+                                                                key={bi}
+                                                                className={styles.bookingBlock}
+                                                                style={{ left: `${left}%`, width: `${width}%`, background: colors[ti % colors.length] }}
+                                                                title={`${b.data} ${b.orario} — ${b.cliente} — €${b.totale}`}
+                                                            />
+                                                        );
+                                                    })}
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </>
+                                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-primary)', minWidth: '60px', textAlign: 'right' }}>
+                                                    €{tavoloTotale}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     )}
@@ -453,7 +546,7 @@ export default function AdminTavoliPage() {
                                         <td>
                                             <div style={{ display: 'flex', gap: '8px' }}>
                                                 <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={() => setEditModal({ ...t })}>Modifica</button>
-                                                <button className={`${styles.actionBtn}`} style={{ background: t.status === 'attivo' ? 'var(--bg-surface-elevated)' : 'var(--color-success)', color: 'var(--text-primary)' }} onClick={() => toggleSuspend(t.id, t.status)}>
+                                                <button className={`${styles.actionBtn} ${t.status === 'attivo' ? styles.actionBtnSuspend : styles.actionBtnPrenotazione}`} onClick={() => toggleSuspend(t.id, t.status)}>
                                                     {t.status === 'attivo' ? 'Sospendi' : 'Riattiva'}
                                                 </button>
                                                 <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleDelete(t.id)}>Elimina</button>
@@ -507,6 +600,138 @@ export default function AdminTavoliPage() {
                                 <div className={styles.modalActions}>
                                     <button className="btn btn-ghost" onClick={() => setEditModal(null)}>Annulla</button>
                                     <button className="btn btn-primary" onClick={handleEditSave}>Salva Modifiche</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {/* NEW BOOKING MODAL */}
+                    {isBookingModalOpen && (
+                        <div className={styles.modal}>
+                            <div className={styles.modalOverlay} onClick={() => setIsBookingModalOpen(false)} />
+                            <div className={styles.modalContent} style={{ maxWidth: '450px', background: '#0a1f1f', border: 'none', borderRadius: '32px', padding: '40px' }}>
+                                <button className={styles.modalClose} onClick={() => setIsBookingModalOpen(false)} style={{ border: 'none', background: 'none' }}>✕</button>
+                                <h3 className={styles.modalTitle} style={{ fontFamily: 'var(--font-heading)', color: '#fff', marginBottom: '24px', fontSize: '1.8rem' }}>Nuova Prenotazione</h3>
+
+                                {bookingError && <div style={{ color: 'var(--color-error)', marginBottom: '16px', fontSize: '0.85rem' }}>{bookingError}</div>}
+
+                                <div style={{ marginBottom: '16px' }}>
+                                    <input
+                                        type="text"
+                                        value={bookingForm.cliente}
+                                        onChange={e => setBookingForm({ ...bookingForm, cliente: e.target.value })}
+                                        placeholder="Nome Cliente"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: '#fff' }}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                                    <input
+                                        type="time"
+                                        value={bookingForm.orario}
+                                        onChange={e => setBookingForm({ ...bookingForm, orario: e.target.value })}
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: '#fff' }}
+                                    />
+                                    <input
+                                        type="number"
+                                        value={bookingForm.persone}
+                                        onChange={e => setBookingForm({ ...bookingForm, persone: e.target.value })}
+                                        placeholder="Persone"
+                                        min="1"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: '#fff' }}
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '16px' }}>
+                                    <input
+                                        type="email"
+                                        value={bookingForm.email}
+                                        onChange={e => setBookingForm({ ...bookingForm, email: e.target.value })}
+                                        placeholder="Email (Opzionale)"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: '#fff' }}
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '16px' }}>
+                                    <input
+                                        type="text"
+                                        value={bookingForm.telefono}
+                                        onChange={e => setBookingForm({ ...bookingForm, telefono: e.target.value })}
+                                        placeholder="Telefono (Opzionale)"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: '#fff' }}
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '32px' }}>
+                                    <select
+                                        value={bookingForm.tavoloId}
+                                        onChange={e => setBookingForm({ ...bookingForm, tavoloId: e.target.value })}
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', color: '#fff' }}
+                                    >
+                                        <option value="" style={{ background: '#0a1f1f' }}>Seleziona Tavolo...</option>
+                                        {tavoli.filter(t => t.status === 'attivo').map(t => (
+                                            <option key={t.id} value={t.id} style={{ background: '#0a1f1f' }}>{t.nome} ({t.posti} posti)</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <button onClick={handleNewBooking} style={{ width: '100%', background: 'linear-gradient(135deg, #d4b483, #aa8b56)', color: '#0a1f1f', border: 'none', borderRadius: '50px', padding: '18px', fontWeight: 700, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '2px', cursor: 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.3)' }}>
+                                    Salva
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* BOOKING DETAILS MODAL */}
+                    {detailsModal && (
+                        <div className={styles.modal}>
+                            <div className={styles.modalOverlay} onClick={() => setDetailsModal(null)} />
+                            <div className={styles.modalContent} style={{ maxWidth: '400px', background: '#0a1f1f', border: 'none', borderRadius: '32px', padding: '40px' }}>
+                                <button className={styles.modalClose} onClick={() => setDetailsModal(null)} style={{ border: 'none', background: 'none' }}>✕</button>
+                                <div style={{ textAlign: 'center' }}>
+                                    <h4 style={{ color: 'var(--color-primary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Dettagli Prenotazione</h4>
+                                    <h3 style={{ color: '#fff', fontSize: '2rem', marginBottom: '24px' }}>{detailsModal.cliente}</h3>
+
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '24px', padding: '24px', textAlign: 'left', marginBottom: '32px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>👥 Persone</span>
+                                            <span style={{ color: '#fff', fontWeight: 600 }}>{detailsModal.persone}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>🕒 Orario</span>
+                                            <span style={{ color: '#fff', fontWeight: 600 }}>{detailsModal.orario}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>📅 Data</span>
+                                            <span style={{ color: '#fff', fontWeight: 600 }}>{detailsModal.data}</span>
+                                        </div>
+                                        {detailsModal.telefono && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>📞 Telefono</span>
+                                                <span style={{ color: 'var(--color-info)', fontWeight: 600 }}>{detailsModal.telefono}</span>
+                                            </div>
+                                        )}
+                                        {detailsModal.email && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>📧 Email</span>
+                                                <span style={{ color: '#fff', fontWeight: 600 }}>{detailsModal.email}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button
+                                            onClick={() => { handleStatusChange(detailsModal.id, 'annullata'); setDetailsModal(null); }}
+                                            style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: 'var(--color-error)', border: '1px solid var(--color-error)', borderRadius: '50px', padding: '12px', fontWeight: 600, cursor: 'pointer' }}
+                                        >
+                                            Annulla
+                                        </button>
+                                        <button
+                                            onClick={() => setDetailsModal(null)}
+                                            style={{ flex: 1, background: 'var(--color-primary)', color: '#0a1f1f', border: 'none', borderRadius: '50px', padding: '12px', fontWeight: 600, cursor: 'pointer' }}
+                                        >
+                                            Chiudi
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -80,6 +80,19 @@
     - [x] Gestione attivazione/disattivazione offerte
     - [x] Fetch active job offers from Supabase
     - [x] Design a premium UI for potential candidates
+- [ ] **Dashboard admin**
+    - [x] Personale: gestione personale (aggiungere, modificare, eliminare o sospendere un dipendente)
+    - [x] Personale: gestione offerte di lavoro (aggiungere o eliminare un'offerta di lavoro)
+    - [x] Personale: gestione Registro orari dipententi (verificare il registro resenza con bilancio ore dei dipendenti)
+    - [x] Tavoli: gestione Prenotazioni (gestione delle prenotazioni in una determinata data o periodo)
+    - [x] Tavoli: gestione tavoli (aggiungere, modificare, eliminare o sospendere un tavolo)
+    - [x] Menu: gestione menu (aggiungere, modificare, eliminare o sospendere un piatto)
+    - [x] Info: gestione informazioni base del ristorante e le funzionalità extra.
+    - [x] Info: gestione orari apertura, durata media pasti, penali no-show
+    - [x] Tavoli: Fix Errore creazione tavolo (mancanza colonne 'nome' e 'numero')
+    - [x] Tavoli: Redesign Gestione Prenotazioni (Timeline View)
+    - [x] Tavoli: UI Refinement (Button styles, Modal fields, Booking pop-up)
+    - [x] Tavoli: Implementazione 'Nuova Prenotazione' con salvataggio DB
 - [ ] **Google Calendar Sync**
     - [ ] Configurazione Google Cloud Console & API Calendars
     - [ ] Sincronizzazione automatica prenotazioni confermate su Calendario Ristorante
