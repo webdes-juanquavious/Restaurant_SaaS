@@ -38,6 +38,14 @@ export default function ContattoPage() {
 
         const formatDayHours = (dayInfo: any) => {
             if (!dayInfo) return '';
+            if (dayInfo.tipo === 'chiuso') return 'Chiuso';
+
+            if (dayInfo.tipo === 'continuato') {
+                if (dayInfo.f1?.ok) return `${dayInfo.f1.a} - ${dayInfo.f1.c}`;
+                return 'Chiuso';
+            }
+
+            // Defaults to 'pausa-pranzo'
             let str = '';
             if (dayInfo.f1?.ok) str += `${dayInfo.f1.a} - ${dayInfo.f1.c}`;
             if (dayInfo.f2?.ok) {
