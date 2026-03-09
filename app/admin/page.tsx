@@ -15,6 +15,7 @@ interface StaffMember {
     status: 'attivo' | 'sospeso' | 'malattia';
     telefono?: string;
     oreSettimanali: number;
+    vacanzeAnnuali: number;
     created_at?: string;
     password?: string; // temp field for UI only
 }
@@ -29,7 +30,14 @@ const labelStyle: React.CSSProperties = { display: 'block', marginBottom: '6px',
 export default function AdminPersonalePage() {
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [loading, setLoading] = useState(true);
-    const [newStaff, setNewStaff] = useState({ nome: '', email: '', password: '', ruolo: 'cameriere' });
+    const [newStaff, setNewStaff] = useState({
+        nome: '',
+        email: '',
+        password: '',
+        ruolo: 'cameriere',
+        oreSettimanali: 40,
+        vacanzeAnnuali: 20
+    });
     const [lavoraConNoiAttivo, setLavoraConNoiAttivo] = useState(true);
 
     const supabase = createClient();
@@ -49,7 +57,8 @@ export default function AdminPersonalePage() {
                 ruolo: item.ruolo,
                 status: item.status,
                 telefono: item.telefono,
-                oreSettimanali: item.ore_settimanali,
+                oreSettimanali: item.ore_settimanali || 40,
+                vacanzeAnnuali: item.vacanze_annuali || 20,
                 created_at: item.created_at
             }));
             setStaff(mappedData);
@@ -92,7 +101,9 @@ export default function AdminPersonalePage() {
                     email: newStaff.email,
                     password: newStaff.password,
                     nome: newStaff.nome,
-                    ruolo: newStaff.ruolo
+                    ruolo: newStaff.ruolo,
+                    ore_settimanali: newStaff.oreSettimanali,
+                    vacanze_annuali: newStaff.vacanzeAnnuali
                 })
             });
             const result = await res.json();
@@ -100,7 +111,14 @@ export default function AdminPersonalePage() {
                 alert('Errore autenticazione: ' + (result.error || 'Errore generico'));
                 return;
             }
-            setNewStaff({ nome: '', email: '', password: '', ruolo: 'cameriere' });
+            setNewStaff({
+                nome: '',
+                email: '',
+                password: '',
+                ruolo: 'cameriere',
+                oreSettimanali: 40,
+                vacanzeAnnuali: 20
+            });
             fetchStaff();
         } catch (err: any) {
             alert('Errore di rete o server: ' + err.message);
@@ -144,8 +162,10 @@ export default function AdminPersonalePage() {
                 body: JSON.stringify({
                     userId: editModal.id,
                     nome: editModal.nome,
+                    email: editModal.email,
                     ruolo: editModal.ruolo,
                     oreSettimanali: editModal.oreSettimanali,
+                    vacanzeAnnuali: editModal.vacanzeAnnuali,
                     newPassword: (editModal as any).password || undefined
                 })
             });
@@ -255,6 +275,16 @@ export default function AdminPersonalePage() {
                                     {ruoliDisponibili.map((r) => <option key={r} value={r}>{r}</option>)}
                                 </select>
                             </div>
+                            <div>
+                                <label style={labelStyle}>Ore/Sett</label>
+                                <input type="number" value={newStaff.oreSettimanali}
+                                    onChange={(e) => setNewStaff({ ...newStaff, oreSettimanali: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Vacanze/Anno</label>
+                                <input type="number" value={newStaff.vacanzeAnnuali}
+                                    onChange={(e) => setNewStaff({ ...newStaff, vacanzeAnnuali: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
+                            </div>
                         </div>
                         <button className="btn btn-primary" onClick={handleAddStaff} style={{ marginTop: '8px' }}>Crea Account</button>
                     </div>
@@ -289,7 +319,7 @@ export default function AdminPersonalePage() {
                                             <span className={`${styles.statusBadge} ${statusInfo.className}`}>{statusInfo.label}</span>
                                         </td>
                                         <td style={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                                            <span style={{ color: 'var(--color-primary)' }}>N/A</span>
+                                            <span style={{ color: 'var(--color-primary)' }}>{s.vacanzeAnnuali}gg</span>
                                         </td>
                                         <td>
                                             <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
@@ -367,6 +397,11 @@ export default function AdminPersonalePage() {
                                 <label style={labelStyle}>Ore Settimanali</label>
                                 <input type="number" value={editModal.oreSettimanali}
                                     onChange={(e) => setEditModal({ ...editModal, oreSettimanali: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Vacanze Annuali</label>
+                                <input type="number" value={editModal.vacanzeAnnuali}
+                                    onChange={(e) => setEditModal({ ...editModal, vacanzeAnnuali: parseInt(e.target.value) || 0 })} style={{ width: '100%' }} />
                             </div>
                         </div>
 

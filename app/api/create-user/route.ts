@@ -27,20 +27,21 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = authData.user.id;
+    const { vacanze_annuali, ore_settimanali } = await req.json().catch(() => ({}));
 
-    // 2. Upsert into personale table (trigger may already handle this)
+    // 2. Upsert into personale table
     const { error: dbError } = await supabaseAdmin.from('personale').upsert({
         id: userId,
         nome,
         email,
         ruolo,
         status: 'attivo',
-        ore_settimanali: 40,
+        ore_settimanali: ore_settimanali || 40,
+        vacanze_annuali: vacanze_annuali || 20,
     }, { onConflict: 'id' });
 
     if (dbError) {
         console.error('Personale upsert error:', dbError);
-        // Don't fail if personale insert fails — auth user was created
     }
 
     return NextResponse.json({ success: true, userId });

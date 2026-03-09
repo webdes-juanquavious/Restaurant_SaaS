@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
-    const { userId, nome, ruolo, telefono, oreSettimanali, newPassword } = await req.json();
+    const { userId, nome, email, ruolo, telefono, oreSettimanali, vacanzeAnnuali, newPassword } = await req.json();
 
     if (!userId) {
         return NextResponse.json({ error: 'userId richiesto.' }, { status: 400 });
@@ -14,30 +14,30 @@ export async function POST(req: NextRequest) {
         { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Update password if provided
-    if (newPassword) {
-        if (newPassword.length < 8) {
-            return NextResponse.json({ error: 'Password deve essere almeno 8 caratteri.' }, { status: 400 });
-        }
-        const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-            password: newPassword,
-            user_metadata: { nome, role: ruolo }
-        });
-        if (pwError) {
-            return NextResponse.json({ error: pwError.message }, { status: 400 });
-        }
-    } else {
-        await supabaseAdmin.auth.admin.updateUserById(userId, {
-            user_metadata: { nome, role: ruolo }
-        });
+    // Update Auth User (Email, Password, Metadata)
+    const authUpdate: any = {
+        user_metadata: { nome, role: ruolo }
+    };
+    if (newPassword && newPassword.length >= 8) {
+        authUpdate.password = newPassword;
+    }
+    if (email) {
+        authUpdate.email = email;
+    }
+
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, authUpdate);
+    if (authError) {
+        return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
     // Update personale table
     const { error: dbError } = await supabaseAdmin.from('personale').update({
         nome,
+        email,
         ruolo,
         telefono: telefono || null,
         ore_settimanali: oreSettimanali || 40,
+        vacanze_annuali: vacanzeAnnuali || 20,
     }).eq('id', userId);
 
     if (dbError) {
