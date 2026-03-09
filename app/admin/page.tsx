@@ -30,6 +30,7 @@ export default function AdminPersonalePage() {
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [newStaff, setNewStaff] = useState({ nome: '', email: '', password: '', ruolo: 'cameriere' });
+    const [lavoraConNoiAttivo, setLavoraConNoiAttivo] = useState(true);
 
     const supabase = createClient();
 
@@ -60,8 +61,15 @@ export default function AdminPersonalePage() {
     };
 
     useEffect(() => {
+        const fetchSettings = async () => {
+            const { data } = await supabase.from('ristorante_info').select('extra_settings').single();
+            if (data?.extra_settings) {
+                setLavoraConNoiAttivo(data.extra_settings.lavoraConNoi !== false);
+            }
+        };
+        fetchSettings();
         fetchStaff();
-    }, []);
+    }, [supabase]);
 
     // Modals
     const [editModal, setEditModal] = useState<StaffMember | null>(null);
@@ -199,14 +207,16 @@ export default function AdminPersonalePage() {
                     <h2 style={{ fontSize: '1.8rem', marginBottom: '8px' }}>Gestione Personale</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Aggiungi, modifica o rimuovi i dipendenti del ristorante.</p>
                 </div>
-                <div
-                    className={`${styles.tabHeaderBox} ${activeTab === 'offerte' ? styles.tabHeaderBoxActive : ''}`}
-                    onClick={() => setActiveTab('offerte')}
-                    style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px' }}
-                >
-                    <h2 style={{ fontSize: '1.4rem' }}>Offerte Lavoro</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Gestione recruiting.</p>
-                </div>
+                {lavoraConNoiAttivo && (
+                    <div
+                        className={`${styles.tabHeaderBox} ${activeTab === 'offerte' ? styles.tabHeaderBoxActive : ''}`}
+                        onClick={() => setActiveTab('offerte')}
+                        style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px' }}
+                    >
+                        <h2 style={{ fontSize: '1.4rem' }}>Offerte Lavoro</h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Gestione recruiting.</p>
+                    </div>
+                )}
                 <div
                     className={`${styles.tabHeaderBox} ${activeTab === 'analitiche' ? styles.tabHeaderBoxActive : ''}`}
                     onClick={() => setActiveTab('analitiche')}
@@ -300,10 +310,7 @@ export default function AdminPersonalePage() {
                     </table>
                 </>
             ) : activeTab === 'offerte' ? (
-                <div className={styles.formPanel} style={{ textAlign: 'center', padding: '60px' }}>
-                    <h3 style={{ marginBottom: '16px' }}>Modulo Offerte di Lavoro</h3>
-                    <p style={{ color: 'var(--text-muted)' }}>Prossimamente: In questa sezione potrai gestire gli annunci di lavoro per il ristorante.</p>
-                </div>
+                <JobOffersManager />
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     <TableHeatmap />
@@ -406,5 +413,139 @@ export default function AdminPersonalePage() {
                 </div>
             )}
         </>
+    );
+}
+
+function JobOffersManager() {
+    const supabase = createClient();
+    const [offerte, setOfferte] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [newOfferta, setNewOfferta] = useState({
+        titolo: '',
+        mansione: '',
+        tipo_contratto: 'Full-Time',
+        stipendio: '',
+        tipo_stipendio: 'annuo',
+        descrizione: ''
+    });
+
+    const fetchOfferte = async () => {
+        setLoading(true);
+        const { data, error } = await supabase.from('offerte_lavoro').select('*').order('created_at', { ascending: false });
+        if (data) setOfferte(data);
+        if (error) console.error('Error fetching job offers:', error);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchOfferte();
+    }, []);
+
+    const handleCreateOfferta = async () => {
+        if (!newOfferta.titolo || !newOfferta.mansione) {
+            alert('Titolo e Mansione sono obbligatori.');
+            return;
+        }
+        const { error } = await supabase.from('offerte_lavoro').insert([{
+            titolo: newOfferta.titolo,
+            mansione: newOfferta.mansione,
+            tipo_contratto: newOfferta.tipo_contratto,
+            stipendio: parseFloat(newOfferta.stipendio) || 0,
+            tipo_stipendio: newOfferta.tipo_stipendio,
+            descrizione: newOfferta.descrizione
+        }]);
+
+        if (error) alert('Errore creazione offerta (Tabella creata?): ' + error.message);
+        else {
+            setNewOfferta({ titolo: '', mansione: '', tipo_contratto: 'Full-Time', stipendio: '', tipo_stipendio: 'annuo', descrizione: '' });
+            fetchOfferte();
+        }
+    };
+
+    const handleDeleteOfferta = async (id: string) => {
+        if (confirm('Sei sicuro di voler eliminare questa offerta?')) {
+            const { error } = await supabase.from('offerte_lavoro').delete().eq('id', id);
+            if (error) alert('Errore eliminazione: ' + error.message);
+            else fetchOfferte();
+        }
+    };
+
+    return (
+        <div style={{ marginTop: '24px' }}>
+            <div className={styles.formPanel}>
+                <h3 className={styles.formPanelTitle}>Pubblica Nuova Offerta</h3>
+                <div className={styles.formRow}>
+                    <div style={{ flex: 2 }}>
+                        <label style={labelStyle}>Titolo Offerta</label>
+                        <input type="text" placeholder="Esempio: Pizzaiolo esperto" value={newOfferta.titolo} onChange={(e) => setNewOfferta({ ...newOfferta, titolo: e.target.value })} style={{ width: '100%' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Mansione</label>
+                        <input type="text" placeholder="Sala, Cucina..." value={newOfferta.mansione} onChange={(e) => setNewOfferta({ ...newOfferta, mansione: e.target.value })} style={{ width: '100%' }} />
+                    </div>
+                </div>
+                <div className={styles.formRow}>
+                    <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Tipo Contratto</label>
+                        <select value={newOfferta.tipo_contratto} onChange={(e) => setNewOfferta({ ...newOfferta, tipo_contratto: e.target.value })} style={{ width: '100%' }}>
+                            <option value="Full-Time">Full-Time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="stagionale">Stagionale</option>
+                            <option value="Remoto">Remoto</option>
+                        </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Stipendio (€)</label>
+                        <input type="number" placeholder="25000" value={newOfferta.stipendio} onChange={(e) => setNewOfferta({ ...newOfferta, stipendio: e.target.value })} style={{ width: '100%' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Tipo Stipendio</label>
+                        <select value={newOfferta.tipo_stipendio} onChange={(e) => setNewOfferta({ ...newOfferta, tipo_stipendio: e.target.value })} style={{ width: '100%' }}>
+                            <option value="annuo">Annuo</option>
+                            <option value="mensile">Mensile</option>
+                            <option value="settimanale">Settimanale</option>
+                            <option value="ad ora">Ad ora</option>
+                        </select>
+                    </div>
+                </div>
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={labelStyle}>Descrizione</label>
+                    <textarea rows={3} placeholder="Breve descrizione..." value={newOfferta.descrizione} onChange={(e) => setNewOfferta({ ...newOfferta, descrizione: e.target.value })} style={{ width: '100%' }} />
+                </div>
+                <button className="btn btn-primary" onClick={handleCreateOfferta}>Pubblica Offerta</button>
+            </div>
+
+            <h3 className={styles.formPanelTitle} style={{ marginTop: '32px' }}>Offerte Pubblicate</h3>
+            <table className={styles.dataTable}>
+                <thead>
+                    <tr>
+                        <th>Titolo</th>
+                        <th>Mansione</th>
+                        <th>Contratto</th>
+                        <th>Stipendio</th>
+                        <th>Data</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {loading ? (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>Caricamento...</td></tr>
+                    ) : offerte.length === 0 ? (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>Nessuna offerta pubblicata.</td></tr>
+                    ) : offerte.map((o) => (
+                        <tr key={o.id}>
+                            <td style={{ fontWeight: 600 }}>{o.titolo}</td>
+                            <td>{o.mansione}</td>
+                            <td style={{ textTransform: 'capitalize' }}>{o.tipo_contratto}</td>
+                            <td>€{o.stipendio} / {o.tipo_stipendio}</td>
+                            <td>{new Date(o.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => handleDeleteOfferta(o.id)}>Elimina</button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     );
 }

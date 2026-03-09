@@ -25,7 +25,9 @@ export default function ContattoPage() {
     const mapsLink = info?.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
     // WhatsApp direct link
-    const waLink = `https://wa.me/${phoneNum}`;
+    const waNumber = info?.extra_settings?.telefonoWhatsapp?.replace(/\D/g, '') || phoneNum;
+    const waLink = `https://wa.me/${waNumber}`;
+    const showWhatsapp = info?.extra_settings?.whatsappPublic === true;
 
     const renderHours = () => {
         if (!info?.orari) return (
@@ -127,15 +129,17 @@ export default function ContattoPage() {
                     </div>
 
                     {/* WhatsApp */}
-                    <div className={`${styles.infoItem} glass-panel`} style={{ padding: '20px', marginBottom: '16px', borderLeft: '3px solid #25D366' }}>
-                        <div className={styles.infoIcon} style={{ color: '#25D366' }}>💬</div>
-                        <div className={styles.infoContent}>
-                            <div className={styles.infoLabel}>WhatsApp</div>
-                            <a href={waLink} target="_blank" rel="noopener noreferrer" className={styles.infoLink} style={{ color: '#25D366', fontWeight: 600 }}>
-                                Scrivici un messaggio su WhatsApp
-                            </a>
+                    {showWhatsapp && (
+                        <div className={`${styles.infoItem} glass-panel`} style={{ padding: '20px', marginBottom: '16px', borderLeft: '3px solid #25D366' }}>
+                            <div className={styles.infoIcon} style={{ color: '#25D366' }}>💬</div>
+                            <div className={styles.infoContent}>
+                                <div className={styles.infoLabel}>WhatsApp</div>
+                                <a href={waLink} target="_blank" rel="noopener noreferrer" className={styles.infoLink} style={{ color: '#25D366', fontWeight: 600 }}>
+                                    Scrivici un messaggio su WhatsApp
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Social Media */}
                     <div className={`${styles.infoItem} glass-panel`} style={{ padding: '20px' }}>

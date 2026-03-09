@@ -20,7 +20,6 @@ export default function AdminInformazioniPage() {
     });
 
     // Impostazioni Generali
-    const [ordinaOnline, setOrdinaOnline] = useState(true);
     const [tema, setTema] = useState('dark');
 
     // Nuove Impostazioni Extra (Prenotazioni & Costi)
@@ -32,7 +31,9 @@ export default function AdminInformazioniPage() {
         isSupplementoAttivo: true,
         costoCoperto: 2.50,       // euro
         whatsappPublic: false,    // true = click telefono apre WhatsApp per utenti
+        telefonoWhatsapp: '',     // Numero specifico per whatsapp
         lavoraConNoi: true,       // Abilitazione pagina Lavora con noi
+        ordinaOnline: true,       // Abilitazione ordini menu
         allowManualDurationOverride: false // Se vero, permette al cameriere di cambiare la durata manualmente
     });
 
@@ -483,10 +484,10 @@ export default function AdminInformazioniPage() {
                     <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                         <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Impostazioni Extra</h4>
                         <ToggleBtn
-                            checked={ordinaOnline}
-                            onChange={() => setOrdinaOnline(!ordinaOnline)}
+                            checked={extraSettings.ordinaOnline}
+                            onChange={() => setExtraSettings({ ...extraSettings, ordinaOnline: !extraSettings.ordinaOnline })}
                             label="Ordina Online Menu"
-                            desc={ordinaOnline ? 'Attivo — i clienti possono ordinare online' : 'Disattivato — il menu è solo consultabile'}
+                            desc={extraSettings.ordinaOnline ? 'Attivo — i clienti possono ordinare online' : 'Disattivato — il menu è solo consultabile'}
                         />
                         <ToggleBtn
                             checked={extraSettings.whatsappPublic}
@@ -494,11 +495,24 @@ export default function AdminInformazioniPage() {
                             label="Contatto WhatsApp"
                             desc="Click sul telefono apre WhatsApp."
                         />
+                        {extraSettings.whatsappPublic && (
+                            <div style={{ marginLeft: '12px', paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginBottom: '20px' }}>
+                                <label className={styles.inputLabel}>Numero WhatsApp (con prefisso)</label>
+                                <input
+                                    type="text"
+                                    value={extraSettings.telefonoWhatsapp || ''}
+                                    onChange={(e) => setExtraSettings({ ...extraSettings, telefonoWhatsapp: e.target.value })}
+                                    placeholder="+39 333 1234567"
+                                    style={{ width: '100%', maxWidth: '250px' }}
+                                />
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Inserisci il numero WhatsApp del ristorante.</div>
+                            </div>
+                        )}
                         <ToggleBtn
                             checked={extraSettings.lavoraConNoi}
                             onChange={() => setExtraSettings({ ...extraSettings, lavoraConNoi: !extraSettings.lavoraConNoi })}
                             label="Pagina Lavora con noi"
-                            desc="Se attivo, mostra le offerte di lavoro."
+                            desc="Se attivo, mostra le offerte di lavoro sul sito pubblico."
                         />
                     </div>
                 </div>

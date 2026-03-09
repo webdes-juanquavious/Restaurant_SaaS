@@ -7,14 +7,12 @@ import { createClient } from '@/lib/supabase';
 
 const categories = ['Tutti', 'Antipasti', 'Primi', 'Secondi', 'Contorni', 'Dolci', 'Bevande'];
 
-/* Ordina online toggle — will come from Supabase impostazioni later */
-const ORDINA_ONLINE_ATTIVA = true;
-
 export default function MenuPage() {
     const [menuItems, setMenuItems] = useState<any[]>([]);
     const [activeCategory, setActiveCategory] = useState('Tutti');
     const [cart, setCart] = useState<{ id: number; qty: number }[]>([]);
     const [loading, setLoading] = useState(true);
+    const [ordinaOnlineAttiva, setOrdinaOnlineAttiva] = useState(true);
 
     const supabase = createClient();
 
@@ -25,6 +23,11 @@ export default function MenuPage() {
                 .from('menu')
                 .select('*')
                 .eq('is_active', true);
+
+            const { data: infoData } = await supabase.from('ristorante_info').select('extra_settings').single();
+            if (infoData && infoData.extra_settings) {
+                setOrdinaOnlineAttiva(infoData.extra_settings.ordinaOnline !== false);
+            }
 
             if (data) {
                 // Map DB snake_case to frontend camelCase
@@ -134,7 +137,7 @@ export default function MenuPage() {
                                         ))}
                                     </div>
                                 </div>
-                                {ORDINA_ONLINE_ATTIVA && (
+                                {ordinaOnlineAttiva && (
                                     <button
                                         className={styles.addToCartBtn}
                                         onClick={() => addToCart(item.id)}
@@ -149,7 +152,7 @@ export default function MenuPage() {
             </div>
 
             {/* Floating Cart */}
-            {ORDINA_ONLINE_ATTIVA && cartCount > 0 && (
+            {ordinaOnlineAttiva && cartCount > 0 && (
                 <button className={styles.floatingCart} aria-label="Carrello">
                     🛒
                     <span className={styles.cartBadge}>{cartCount}</span>

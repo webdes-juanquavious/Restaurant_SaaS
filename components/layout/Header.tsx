@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './Header.module.css';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { createClient } from '@/lib/supabase';
 
 /* Navigation configs per role */
-const publicNav = [
+const basePublicNav = [
   { href: '/', label: 'Home' },
   { href: '/prenota', label: 'Prenota' },
   { href: '/menu', label: 'Menu' },
   { href: '/contatto', label: 'Contatto' },
-  { href: '/lavora-con-noi', label: 'Lavora con Noi' },
   { href: '/login', label: 'Login' },
 ];
 
@@ -37,12 +37,28 @@ export default function Header() {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [lavoraConNoiAttivo, setLavoraConNoiAttivo] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from('ristorante_info').select('extra_settings').single();
+      if (data?.extra_settings) {
+        setLavoraConNoiAttivo(data.extra_settings.lavoraConNoi !== false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   /* Determine role from user metadata */
   const userRole = user?.user_metadata?.role;
   const isAdmin = userRole === 'admin' || pathname.startsWith('/admin');
   const isDipendente = (['cameriere', 'cuoco', 'cassiere', 'barman', 'pizzaiolo'].includes(userRole)) || pathname.startsWith('/dipendenti');
   const isLoggedIn = !!user;
+
+  const publicNav = lavoraConNoiAttivo
+    ? [...basePublicNav.slice(0, 4), { href: '/lavora-con-noi', label: 'Lavora con Noi' }, ...basePublicNav.slice(4)]
+    : basePublicNav;
 
   const navItems = isAdmin ? adminNav : isDipendente ? dipendentiNav : publicNav;
   const userName = user?.user_metadata?.full_name || user?.email || '';

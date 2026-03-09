@@ -29,7 +29,9 @@ export default function Footer() {
     const mapsLink = info?.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
     // WhatsApp direct link
-    const waLink = `https://wa.me/${phoneNum}`;
+    const waNumber = info?.extra_settings?.telefonoWhatsapp?.replace(/\D/g, '') || phoneNum;
+    const waLink = `https://wa.me/${waNumber}`;
+    const showWhatsapp = info?.extra_settings?.whatsappPublic === true;
 
     const renderHours = () => {
         if (!info?.orari) return (
@@ -118,16 +120,18 @@ export default function Footer() {
                         <span className={styles.footerLinkIcon}>📞</span>
                         {phoneDisplay}
                     </a>
-                    <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.footerLink}
-                        title="Scrivici su WhatsApp"
-                    >
-                        <span className={styles.footerLinkIcon} style={{ color: '#25D366' }}>💬</span>
-                        WhatsApp
-                    </a>
+                    {showWhatsapp && (
+                        <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.footerLink}
+                            title="Scrivici su WhatsApp"
+                        >
+                            <span className={styles.footerLinkIcon} style={{ color: '#25D366' }}>💬</span>
+                            WhatsApp
+                        </a>
+                    )}
                     <a href={`mailto:${email}`} className={styles.footerLink}>
                         <span className={styles.footerLinkIcon}>✉️</span>
                         {email}
