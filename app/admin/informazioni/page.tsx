@@ -49,6 +49,7 @@ export default function AdminInformazioniPage() {
 
     const [dbId, setDbId] = useState<string | null>(null);
     const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+    const [activeSubTab, setActiveSubTab] = useState<'info' | 'orari' | 'extra'>('info');
     const supabase = createClient();
 
     const showToast = (msg: string, ok: boolean) => {
@@ -218,351 +219,388 @@ export default function AdminInformazioniPage() {
                 </div>
             )}
 
-            <h2 className={styles.pageTitle}>Informazioni Ristorante</h2>
+            <h2 className={styles.pageTitle}>Info & Extra</h2>
             <p className={styles.pageSubtitle}>Modifica le informazioni e i parametri di sistema del ristorante.</p>
 
-            {/* 1. Dati Base */}
-            <div className={styles.formPanel} style={{ marginBottom: '24px' }}>
-                <h3 className={styles.formPanelTitle}>Dati Base</h3>
-                <div className={styles.formRow}>
-                    <div>
-                        <label className={styles.inputLabel}>Nome Ristorante</label>
-                        <input type="text" value={info.nome} onChange={(e) => setInfo({ ...info, nome: e.target.value })} style={{ width: '100%' }} />
+            {/* Sub-Tabs Navigation */}
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '32px' }}>
+                {[
+                    { id: 'info', label: 'Info Ristorante', desc: 'Modifica le informazioni di base del ristorante' },
+                    { id: 'orari', label: 'Orari di apertura', desc: 'Modifica gli orari di apertura' },
+                    { id: 'extra', label: 'Funzionalità extra', desc: 'Gestione funzionalità extra' }
+                ].map((tab) => (
+                    <div
+                        key={tab.id}
+                        className={`${styles.tabHeaderBox} ${activeSubTab === tab.id ? styles.tabHeaderBoxActive : ''}`}
+                        onClick={() => setActiveSubTab(tab.id as any)}
+                        style={{
+                            flex: 1,
+                            cursor: 'pointer',
+                            padding: '24px',
+                            borderRadius: 'var(--radius-lg)',
+                            background: activeSubTab === tab.id ? 'rgba(var(--color-primary-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
+                            border: activeSubTab === tab.id ? '2px solid var(--color-primary)' : '1px solid var(--border-color)',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                        }}
+                    >
+                        <h4 style={{ fontSize: '1.2rem', margin: 0, color: activeSubTab === tab.id ? 'var(--color-primary)' : 'inherit' }}>{tab.label}</h4>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, lineHeight: '1.4' }}>{tab.desc}</p>
                     </div>
-                    <div>
-                        <label className={styles.inputLabel}>Indirizzo</label>
-                        <input type="text" value={info.indirizzo} onChange={(e) => setInfo({ ...info, indirizzo: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                </div>
-                <div className={styles.formRow}>
-                    <div>
-                        <label className={styles.inputLabel}>Telefono</label>
-                        <input type="tel" value={info.telefono} onChange={(e) => setInfo({ ...info, telefono: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                    <div>
-                        <label className={styles.inputLabel}>Email</label>
-                        <input type="email" value={info.email} onChange={(e) => setInfo({ ...info, email: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                </div>
-                <div style={{ marginBottom: '16px' }}>
-                    <label className={styles.inputLabel}>Descrizione</label>
-                    <textarea value={info.descrizione} onChange={(e) => setInfo({ ...info, descrizione: e.target.value })} rows={3} style={{ width: '100%' }} />
-                </div>
-                <div className={styles.formRow}>
-                    <div>
-                        <label className={styles.inputLabel}>Facebook URL</label>
-                        <input type="url" value={info.facebook} onChange={(e) => setInfo({ ...info, facebook: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                    <div>
-                        <label className={styles.inputLabel}>Instagram URL</label>
-                        <input type="url" value={info.instagram} onChange={(e) => setInfo({ ...info, instagram: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                    <div>
-                        <label className={styles.inputLabel}>TikTok URL</label>
-                        <input type="url" value={info.tiktok} onChange={(e) => setInfo({ ...info, tiktok: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                </div>
-                <div className={styles.formRow}>
-                    <div style={{ flex: 1 }}>
-                        <label className={styles.inputLabel}>Google Maps Link</label>
-                        <input type="url" value={info.googleMapsLink} onChange={(e) => setInfo({ ...info, googleMapsLink: e.target.value })} style={{ width: '100%' }} />
-                    </div>
-                </div>
-                <div style={{ marginBottom: '16px' }}>
-                    <label className={styles.inputLabel}>Embed Google Maps (Iframe)</label>
-                    <textarea
-                        value={info.googleMapsEmbed}
-                        onChange={(e) => setInfo({ ...info, googleMapsEmbed: e.target.value })}
-                        rows={2}
-                        style={{ width: '100%', fontSize: '0.8rem', fontFamily: 'monospace' }}
-                        placeholder='<iframe src="..." ...></iframe>'
-                    />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '16px' }}>
-                    <button className="btn btn-primary" style={{ padding: '10px 24px' }} onClick={handleSaveGeneral}>Salva Dati Base</button>
-                </div>
+                ))}
             </div>
 
-            {/* 2. Orari di Apertura (Subito dopo Dati Base) */}
-            <div className={styles.formPanel} style={{ marginBottom: '24px' }}>
-                <h3 className={styles.formPanelTitle}>Orari di Apertura</h3>
+            {/* Panel 1: Info Ristorante + Tema */}
+            {activeSubTab === 'info' && (
+                <>
+                    <div className={styles.formPanel} style={{ marginBottom: '24px' }}>
+                        <h3 className={styles.formPanelTitle}>Informazioni di Base</h3>
+                        <div className={styles.formRow}>
+                            <div>
+                                <label className={styles.inputLabel}>Nome Ristorante</label>
+                                <input type="text" value={info.nome} onChange={(e) => setInfo({ ...info, nome: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label className={styles.inputLabel}>Indirizzo</label>
+                                <input type="text" value={info.indirizzo} onChange={(e) => setInfo({ ...info, indirizzo: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                        </div>
+                        <div className={styles.formRow}>
+                            <div>
+                                <label className={styles.inputLabel}>Telefono</label>
+                                <input type="tel" value={info.telefono} onChange={(e) => setInfo({ ...info, telefono: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label className={styles.inputLabel}>Email</label>
+                                <input type="email" value={info.email} onChange={(e) => setInfo({ ...info, email: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                            <label className={styles.inputLabel}>Descrizione</label>
+                            <textarea value={info.descrizione} onChange={(e) => setInfo({ ...info, descrizione: e.target.value })} rows={3} style={{ width: '100%' }} />
+                        </div>
+                        <div className={styles.formRow}>
+                            <div>
+                                <label className={styles.inputLabel}>Facebook URL</label>
+                                <input type="url" value={info.facebook} onChange={(e) => setInfo({ ...info, facebook: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label className={styles.inputLabel}>Instagram URL</label>
+                                <input type="url" value={info.instagram} onChange={(e) => setInfo({ ...info, instagram: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            <div>
+                                <label className={styles.inputLabel}>TikTok URL</label>
+                                <input type="url" value={info.tiktok} onChange={(e) => setInfo({ ...info, tiktok: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                        </div>
+                        <div className={styles.formRow}>
+                            <div style={{ flex: 1 }}>
+                                <label className={styles.inputLabel}>Google Maps Link</label>
+                                <input type="url" value={info.googleMapsLink} onChange={(e) => setInfo({ ...info, googleMapsLink: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                            <label className={styles.inputLabel}>Embed Google Maps (Iframe)</label>
+                            <textarea
+                                value={info.googleMapsEmbed}
+                                onChange={(e) => setInfo({ ...info, googleMapsEmbed: e.target.value })}
+                                rows={2}
+                                style={{ width: '100%', fontSize: '0.8rem', fontFamily: 'monospace' }}
+                                placeholder='<iframe src="..." ...></iframe>'
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '16px' }}>
+                            <button className="btn btn-primary" style={{ padding: '10px 24px' }} onClick={handleSaveGeneral}>Salva Informazioni</button>
+                        </div>
+                    </div>
 
-                {/* Intestazione Colonne */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)', gap: '15px', marginBottom: '16px', padding: '0 16px' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Giorno</div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Categoria</div>
-                    <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.2 }}>Orari mattina<br />(servizio pranzo)</div>
-                    <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.2 }}>Orari pomeriggio<br />(servizio cena)</div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {giorniSettimana.map((giorno) => {
-                        const sched = orari[giorno];
-                        const isClosed = sched.tipo === 'chiuso';
-                        const isContinuo = sched.tipo === 'continuato';
-
-                        return (
-                            <div
-                                key={giorno}
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)',
-                                    gap: '15px',
-                                    alignItems: 'center',
-                                    padding: '10px 16px',
-                                    background: 'rgba(255,255,255,0.02)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    border: '1px solid var(--border-color)',
-                                    opacity: isClosed ? 0.5 : 1
-                                }}
-                            >
-                                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{giorniLabel[giorno]}</span>
-
-                                <select
-                                    value={sched.tipo}
-                                    onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, tipo: e.target.value } })}
+                    <div className={styles.formPanel}>
+                        <h3 className={styles.formPanelTitle}>Tema Colore</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                            {themes.map((t) => (
+                                <button
+                                    key={t.value}
+                                    onClick={() => handleThemeChange(t.value)}
                                     style={{
-                                        padding: '6px 8px', fontSize: '0.8rem', fontWeight: 600,
-                                        color: isClosed ? 'var(--color-error)' : 'var(--color-primary)',
-                                        background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px'
+                                        padding: '24px 16px', borderRadius: 'var(--radius-md)',
+                                        border: tema === t.value ? '2px solid var(--color-primary)' : '1px solid var(--border-color)',
+                                        background: t.preview, color: t.text, cursor: 'pointer', textAlign: 'center',
+                                        fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.3s ease',
+                                        boxShadow: tema === t.value ? 'var(--shadow-glow)' : 'none',
+                                        opacity: tema === t.value ? 1 : 0.8
                                     }}
                                 >
-                                    <option value="chiuso">chiuso</option>
-                                    <option value="pausa-pranzo">pausa pranzo</option>
-                                    <option value="continuato">continuato</option>
-                                </select>
+                                    {t.label}
+                                    {tema === t.value && <span style={{ display: 'block', fontSize: '0.75rem', marginTop: '8px', color: 'var(--color-primary)' }}>✓ Attivo</span>}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                                    {!isClosed && (
-                                        <>
-                                            <input
-                                                type="time" value={sched.f1.a} disabled={!sched.f1.ok}
-                                                onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, a: e.target.value } } })}
-                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
-                                            />
-                                            <span style={{ color: 'var(--text-muted)' }}>–</span>
-                                            <input
-                                                type="time" value={sched.f1.c} disabled={!sched.f1.ok}
-                                                onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, c: e.target.value } } })}
-                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
-                                            />
-                                            {!isContinuo && (
+            {/* Panel 2: Orari */}
+            {activeSubTab === 'orari' && (
+                <div className={styles.formPanel} style={{ marginBottom: '24px' }}>
+                    <h3 className={styles.formPanelTitle}>Orari di Apertura</h3>
+
+                    {/* Intestazione Colonne */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)', gap: '15px', marginBottom: '16px', padding: '0 16px' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Giorno</div>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Categoria</div>
+                        <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.2 }}>Orari mattina<br />(servizio pranzo)</div>
+                        <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.2 }}>Orari pomeriggio<br />(servizio cena)</div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {giorniSettimana.map((giorno) => {
+                            const sched = orari[giorno];
+                            const isClosed = sched.tipo === 'chiuso';
+                            const isContinuo = sched.tipo === 'continuato';
+
+                            return (
+                                <div
+                                    key={giorno}
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'minmax(100px, 1fr) minmax(130px, 1.2fr) minmax(280px, 2fr) minmax(280px, 2fr)',
+                                        gap: '15px',
+                                        alignItems: 'center',
+                                        padding: '10px 16px',
+                                        background: 'rgba(255,255,255,0.02)',
+                                        borderRadius: 'var(--radius-sm)',
+                                        border: '1px solid var(--border-color)',
+                                        opacity: isClosed ? 0.5 : 1
+                                    }}
+                                >
+                                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{giorniLabel[giorno]}</span>
+
+                                    <select
+                                        value={sched.tipo}
+                                        onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, tipo: e.target.value } })}
+                                        style={{
+                                            padding: '6px 8px', fontSize: '0.8rem', fontWeight: 600,
+                                            color: isClosed ? 'var(--color-error)' : 'var(--color-primary)',
+                                            background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '6px'
+                                        }}
+                                    >
+                                        <option value="chiuso">chiuso</option>
+                                        <option value="pausa-pranzo">pausa pranzo</option>
+                                        <option value="continuato">continuato</option>
+                                    </select>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                                        {!isClosed && (
+                                            <>
+                                                <input
+                                                    type="time" value={sched.f1.a} disabled={!sched.f1.ok}
+                                                    onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, a: e.target.value } } })}
+                                                    style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
+                                                />
+                                                <span style={{ color: 'var(--text-muted)' }}>–</span>
+                                                <input
+                                                    type="time" value={sched.f1.c} disabled={!sched.f1.ok}
+                                                    onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, c: e.target.value } } })}
+                                                    style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
+                                                />
+                                                {!isContinuo && (
+                                                    <button
+                                                        onClick={() => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, ok: !sched.f1.ok } } })}
+                                                        style={{
+                                                            width: '32px', height: '18px', borderRadius: '10px',
+                                                            background: sched.f1.ok ? 'var(--color-success)' : 'var(--border-color)',
+                                                            border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <div style={{ position: 'absolute', top: '2px', left: sched.f1.ok ? '16px' : '2px', width: '14px', height: '14px', background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                                        {sched.tipo === 'pausa-pranzo' && (
+                                            <>
+                                                <input
+                                                    type="time" value={sched.f2.a} disabled={!sched.f2.ok}
+                                                    onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, a: e.target.value } } })}
+                                                    style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
+                                                />
+                                                <span style={{ color: 'var(--text-muted)' }}>–</span>
+                                                <input
+                                                    type="time" value={sched.f2.c} disabled={!sched.f2.ok}
+                                                    onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, c: e.target.value } } })}
+                                                    style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
+                                                />
                                                 <button
-                                                    onClick={() => setOrari({ ...orari, [giorno]: { ...sched, f1: { ...sched.f1, ok: !sched.f1.ok } } })}
+                                                    onClick={() => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, ok: !sched.f2.ok } } })}
                                                     style={{
                                                         width: '32px', height: '18px', borderRadius: '10px',
-                                                        background: sched.f1.ok ? 'var(--color-success)' : 'var(--border-color)',
+                                                        background: sched.f2.ok ? 'var(--color-success)' : 'var(--border-color)',
                                                         border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0
                                                     }}
                                                 >
-                                                    <div style={{ position: 'absolute', top: '2px', left: sched.f1.ok ? '16px' : '2px', width: '14px', height: '14px', background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
+                                                    <div style={{ position: 'absolute', top: '2px', left: sched.f2.ok ? '16px' : '2px', width: '14px', height: '14px', background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
                                                 </button>
-                                            )}
-                                        </>
-                                    )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
+                            );
+                        })}
+                    </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                                    {sched.tipo === 'pausa-pranzo' && (
-                                        <>
-                                            <input
-                                                type="time" value={sched.f2.a} disabled={!sched.f2.ok}
-                                                onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, a: e.target.value } } })}
-                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
-                                            />
-                                            <span style={{ color: 'var(--text-muted)' }}>–</span>
-                                            <input
-                                                type="time" value={sched.f2.c} disabled={!sched.f2.ok}
-                                                onChange={(e) => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, c: e.target.value } } })}
-                                                style={{ width: '85px', padding: '4px', fontSize: '0.8rem', textAlign: 'center' }}
-                                            />
-                                            <button
-                                                onClick={() => setOrari({ ...orari, [giorno]: { ...sched, f2: { ...sched.f2, ok: !sched.f2.ok } } })}
-                                                style={{
-                                                    width: '32px', height: '18px', borderRadius: '10px',
-                                                    background: sched.f2.ok ? 'var(--color-success)' : 'var(--border-color)',
-                                                    border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0
-                                                }}
-                                            >
-                                                <div style={{ position: 'absolute', top: '2px', left: sched.f2.ok ? '16px' : '2px', width: '14px', height: '14px', background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
-                                            </button>
-                                        </>
-                                    )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '24px' }}>
+                        <button className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase' }} onClick={handleSaveOrari}>
+                            Salva Orari
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Panel 3: Funzionalità Extra */}
+            {activeSubTab === 'extra' && (
+                <div className={styles.formPanel}>
+                    <h3 className={styles.formPanelTitle}>Funzionalità Extra</h3>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+                        {/* Regole Tavoli */}
+                        <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                            <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Regole Tavoli</h4>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                    Durata Default Prenotazione
+                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                        <input
+                                            type="number" value={extraSettings.durataDefault}
+                                            onChange={(v) => setExtraSettings({ ...extraSettings, durataDefault: parseInt(v.target.value) || 0 })}
+                                            style={{ width: '80px' }}
+                                        />
+                                        <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>min</span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <button
+                                            onClick={() => setExtraSettings({ ...extraSettings, allowManualDurationOverride: !extraSettings.allowManualDurationOverride })}
+                                            style={{
+                                                width: '36px', height: '18px', borderRadius: '9px',
+                                                background: extraSettings.allowManualDurationOverride ? 'var(--color-success)' : 'var(--border-color)',
+                                                position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.3s'
+                                            }}
+                                        >
+                                            <span style={{
+                                                position: 'absolute', top: '2px', left: extraSettings.allowManualDurationOverride ? '20px' : '2px',
+                                                width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'all 0.3s'
+                                            }} />
+                                        </button>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', opacity: 0.8 }}>Modifica Manuale</span>
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
+                                    Tempo standard assegnato a un tavolo prenotato online.<br />
+                                    <span style={{ color: extraSettings.allowManualDurationOverride ? 'var(--color-success)' : 'inherit', fontWeight: extraSettings.allowManualDurationOverride ? 600 : 400 }}>
+                                        {extraSettings.allowManualDurationOverride
+                                            ? '✓ Il cameriere potrà modificare il tempo massimo dal lato prenotazione.'
+                                            : 'Se il pulsante è attivo, si può modificare il tempo massimo dal lato di prenotazione.'}
+                                    </span>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '24px' }}>
-                    <button className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase' }} onClick={handleSaveOrari}>
-                        Salva Orari
-                    </button>
-                </div>
-            </div>
-
-            {/* 3. Sezione Funzionalità (Unificata) */}
-            <div className={styles.formPanel}>
-                <h3 className={styles.formPanelTitle}>Funzionalità</h3>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-                    {/* Regole Tavoli */}
-                    <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Regole Tavoli</h4>
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                                Durata Default Prenotazione
-                            </label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                                    <input
-                                        type="number" value={extraSettings.durataDefault}
-                                        onChange={(v) => setExtraSettings({ ...extraSettings, durataDefault: parseInt(v.target.value) || 0 })}
-                                        style={{ width: '80px' }}
+                            <ToggleBtn
+                                checked={extraSettings.isPenaleAttiva}
+                                onChange={() => setExtraSettings({ ...extraSettings, isPenaleAttiva: !extraSettings.isPenaleAttiva })}
+                                label="Attiva Penale No-Show (Ritardo)"
+                                desc="Ritardo massimo consentito prima di perdere il tavolo."
+                            />
+                            {extraSettings.isPenaleAttiva && (
+                                <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginLeft: '12px', marginBottom: '20px' }}>
+                                    <NumberInput
+                                        label="Ritardo Massimo Consentito"
+                                        value={extraSettings.penaleNoShow}
+                                        onChange={(v) => setExtraSettings({ ...extraSettings, penaleNoShow: v })}
+                                        unit="min"
                                     />
-                                    <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>min</span>
                                 </div>
+                            )}
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <button
-                                        onClick={() => setExtraSettings({ ...extraSettings, allowManualDurationOverride: !extraSettings.allowManualDurationOverride })}
-                                        style={{
-                                            width: '36px', height: '18px', borderRadius: '9px',
-                                            background: extraSettings.allowManualDurationOverride ? 'var(--color-success)' : 'var(--border-color)',
-                                            position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.3s'
-                                        }}
-                                    >
-                                        <span style={{
-                                            position: 'absolute', top: '2px', left: extraSettings.allowManualDurationOverride ? '20px' : '2px',
-                                            width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'all 0.3s'
-                                        }} />
-                                    </button>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', opacity: 0.8 }}>Modifica Manuale</span>
+                            <ToggleBtn
+                                checked={extraSettings.isSupplementoAttivo}
+                                onChange={() => setExtraSettings({ ...extraSettings, isSupplementoAttivo: !extraSettings.isSupplementoAttivo })}
+                                label="Supplemento Tempo Extra"
+                                desc="Costo extra se il cliente prenota per un tempo superiore allo standard."
+                            />
+                            {extraSettings.isSupplementoAttivo && (
+                                <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginLeft: '12px', marginBottom: '20px' }}>
+                                    <NumberInput
+                                        label="Costo Supplemento"
+                                        value={extraSettings.supplementoExtra}
+                                        onChange={(v) => setExtraSettings({ ...extraSettings, supplementoExtra: v })}
+                                        unit="€"
+                                    />
                                 </div>
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
-                                Tempo standard assegnato a un tavolo prenotato online.<br />
-                                <span style={{ color: extraSettings.allowManualDurationOverride ? 'var(--color-success)' : 'inherit', fontWeight: extraSettings.allowManualDurationOverride ? 600 : 400 }}>
-                                    {extraSettings.allowManualDurationOverride
-                                        ? '✓ Il cameriere potrà modificare il tempo massimo dal lato prenotazione.'
-                                        : 'Se il pulsante è attivo, si può modificare il tempo massimo dal lato di prenotazione.'}
-                                </span>
-                            </div>
+                            )}
                         </div>
 
-                        <ToggleBtn
-                            checked={extraSettings.isPenaleAttiva}
-                            onChange={() => setExtraSettings({ ...extraSettings, isPenaleAttiva: !extraSettings.isPenaleAttiva })}
-                            label="Attiva Penale No-Show (Ritardo)"
-                            desc="Ritardo massimo consentito prima di perdere il tavolo."
-                        />
-                        {extraSettings.isPenaleAttiva && (
-                            <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginLeft: '12px', marginBottom: '20px' }}>
-                                <NumberInput
-                                    label="Ritardo Massimo Consentito"
-                                    value={extraSettings.penaleNoShow}
-                                    onChange={(v) => setExtraSettings({ ...extraSettings, penaleNoShow: v })}
-                                    unit="min"
-                                />
-                            </div>
-                        )}
+                        {/* Costi & Cassa */}
+                        <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                            <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Costi & Cassa</h4>
+                            <NumberInput
+                                label="Costo Coperto (a persona)"
+                                value={extraSettings.costoCoperto}
+                                onChange={(v) => setExtraSettings({ ...extraSettings, costoCoperto: v })}
+                                unit="€"
+                                desc="Aggiunto automaticamente alla chiusura in base al numero di persone."
+                            />
+                        </div>
 
-                        <ToggleBtn
-                            checked={extraSettings.isSupplementoAttivo}
-                            onChange={() => setExtraSettings({ ...extraSettings, isSupplementoAttivo: !extraSettings.isSupplementoAttivo })}
-                            label="Supplemento Tempo Extra"
-                            desc="Costo extra se il cliente prenota per un tempo superiore allo standard."
-                        />
-                        {extraSettings.isSupplementoAttivo && (
-                            <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginLeft: '12px', marginBottom: '20px' }}>
-                                <NumberInput
-                                    label="Costo Supplemento"
-                                    value={extraSettings.supplementoExtra}
-                                    onChange={(v) => setExtraSettings({ ...extraSettings, supplementoExtra: v })}
-                                    unit="€"
-                                />
-                            </div>
-                        )}
+                        {/* Funzionalità Extra */}
+                        <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                            <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Impostazioni Extra</h4>
+                            <ToggleBtn
+                                checked={extraSettings.ordinaOnline}
+                                onChange={() => setExtraSettings({ ...extraSettings, ordinaOnline: !extraSettings.ordinaOnline })}
+                                label="Ordina Online Menu"
+                                desc={extraSettings.ordinaOnline ? 'Attivo — i clienti possono ordinare online' : 'Disattivato — il menu è solo consultabile'}
+                            />
+                            <ToggleBtn
+                                checked={extraSettings.whatsappPublic}
+                                onChange={() => setExtraSettings({ ...extraSettings, whatsappPublic: !extraSettings.whatsappPublic })}
+                                label="Contatto WhatsApp"
+                                desc="Click sul telefono apre WhatsApp."
+                            />
+                            {extraSettings.whatsappPublic && (
+                                <div style={{ marginLeft: '12px', paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginBottom: '20px' }}>
+                                    <label className={styles.inputLabel}>Numero WhatsApp (con prefisso)</label>
+                                    <input
+                                        type="text"
+                                        value={extraSettings.telefonoWhatsapp || ''}
+                                        onChange={(e) => setExtraSettings({ ...extraSettings, telefonoWhatsapp: e.target.value })}
+                                        placeholder="+39 333 1234567"
+                                        style={{ width: '100%', maxWidth: '250px' }}
+                                    />
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Inserisci il numero WhatsApp del ristorante.</div>
+                                </div>
+                            )}
+                            <ToggleBtn
+                                checked={extraSettings.lavoraConNoi}
+                                onChange={() => setExtraSettings({ ...extraSettings, lavoraConNoi: !extraSettings.lavoraConNoi })}
+                                label="Pagina Lavora con noi"
+                                desc="Se attivo, mostra le offerte di lavoro sul sito pubblico."
+                            />
+                        </div>
                     </div>
 
-                    {/* Costi & Cassa */}
-                    <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Costi & Cassa</h4>
-                        <NumberInput
-                            label="Costo Coperto (a persona)"
-                            value={extraSettings.costoCoperto}
-                            onChange={(v) => setExtraSettings({ ...extraSettings, costoCoperto: v })}
-                            unit="€"
-                            desc="Aggiunto automaticamente alla chiusura in base al numero di persone."
-                        />
-                    </div>
-
-                    {/* Funzionalità Extra */}
-                    <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--color-primary)' }}>Impostazioni Extra</h4>
-                        <ToggleBtn
-                            checked={extraSettings.ordinaOnline}
-                            onChange={() => setExtraSettings({ ...extraSettings, ordinaOnline: !extraSettings.ordinaOnline })}
-                            label="Ordina Online Menu"
-                            desc={extraSettings.ordinaOnline ? 'Attivo — i clienti possono ordinare online' : 'Disattivato — il menu è solo consultabile'}
-                        />
-                        <ToggleBtn
-                            checked={extraSettings.whatsappPublic}
-                            onChange={() => setExtraSettings({ ...extraSettings, whatsappPublic: !extraSettings.whatsappPublic })}
-                            label="Contatto WhatsApp"
-                            desc="Click sul telefono apre WhatsApp."
-                        />
-                        {extraSettings.whatsappPublic && (
-                            <div style={{ marginLeft: '12px', paddingLeft: '24px', borderLeft: '2px solid var(--color-primary)', marginBottom: '20px' }}>
-                                <label className={styles.inputLabel}>Numero WhatsApp (con prefisso)</label>
-                                <input
-                                    type="text"
-                                    value={extraSettings.telefonoWhatsapp || ''}
-                                    onChange={(e) => setExtraSettings({ ...extraSettings, telefonoWhatsapp: e.target.value })}
-                                    placeholder="+39 333 1234567"
-                                    style={{ width: '100%', maxWidth: '250px' }}
-                                />
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Inserisci il numero WhatsApp del ristorante.</div>
-                            </div>
-                        )}
-                        <ToggleBtn
-                            checked={extraSettings.lavoraConNoi}
-                            onChange={() => setExtraSettings({ ...extraSettings, lavoraConNoi: !extraSettings.lavoraConNoi })}
-                            label="Pagina Lavora con noi"
-                            desc="Se attivo, mostra le offerte di lavoro sul sito pubblico."
-                        />
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '32px' }}>
+                        <button className="btn btn-primary" style={{ padding: '12px 32px' }} onClick={handleSaveExtra}>Salva Funzionalità</button>
                     </div>
                 </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '32px' }}>
-                    <button className="btn btn-primary" style={{ padding: '12px 32px' }} onClick={handleSaveExtra}>Salva Tutte le Funzionalità</button>
-                </div>
-            </div>
-
-            {/* Theme Selector */}
-            <div className={styles.formPanel}>
-                <h3 className={styles.formPanelTitle}>Tema Colore</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                    {themes.map((t) => (
-                        <button
-                            key={t.value}
-                            onClick={() => handleThemeChange(t.value)}
-                            style={{
-                                padding: '24px 16px', borderRadius: 'var(--radius-md)',
-                                border: tema === t.value ? '2px solid var(--color-primary)' : '1px solid var(--border-color)',
-                                background: t.preview, color: t.text, cursor: 'pointer', textAlign: 'center',
-                                fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.3s ease',
-                                boxShadow: tema === t.value ? 'var(--shadow-glow)' : 'none',
-                                opacity: tema === t.value ? 1 : 0.8
-                            }}
-                        >
-                            {t.label}
-                            {tema === t.value && <span style={{ display: 'block', fontSize: '0.75rem', marginTop: '8px', color: 'var(--color-primary)' }}>✓ Attivo</span>}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            )}
         </>
     );
 }

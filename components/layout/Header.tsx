@@ -20,7 +20,7 @@ const adminNav = [
   { href: '/admin', label: 'PERSONALE' },
   { href: '/admin/tavoli', label: 'TAVOLI' },
   { href: '/admin/menu', label: 'MENU' },
-  { href: '/admin/informazioni', label: 'INFORMAZIONI' },
+  { href: '/admin/informazioni', label: 'INFO & EXTRA' },
   { href: '/admin/contabilita', label: 'CONTABILITA' },
 ];
 
