@@ -219,8 +219,8 @@ export default function AdminInformazioniPage() {
                 </div>
             )}
 
-            <h2 className={styles.pageTitle}>Info & Extra</h2>
-            <p className={styles.pageSubtitle}>Modifica le informazioni e i parametri di sistema del ristorante.</p>
+            <h2 className={styles.pageTitle}>Informazioni e Funzionalità extra del ristorante</h2>
+            <p className={styles.pageSubtitle}>Modifica le informazioni base del ristorante e le funzionalità extra.</p>
 
             {/* Sub-Tabs Navigation */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '32px' }}>

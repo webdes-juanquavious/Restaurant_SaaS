@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import styles from './admin.module.css';
 import { createClient } from '@/lib/supabase';
-import TableHeatmap from '@/components/admin/TableHeatmap';
-import SeasonalInsights from '@/components/admin/SeasonalInsights';
 
 /* ---- Types ---- */
 interface StaffMember {
@@ -85,7 +83,25 @@ export default function AdminPersonalePage() {
     const [passwordModal, setPasswordModal] = useState<StaffMember | null>(null);
     const [newPassword, setNewPassword] = useState({ pw1: '', pw2: '' });
     const [pwError, setPwError] = useState('');
-    const [activeTab, setActiveTab] = useState<'personale' | 'offerte' | 'analitiche'>('personale');
+    const [activeTab, setActiveTab] = useState<'personale' | 'offerte' | 'registro'>('personale');
+    const [attendanceData, setAttendanceData] = useState<any[]>([]);
+    const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+    const fetchAttendance = async () => {
+        setAttendanceLoading(true);
+        // Per semplicità carichiamo gli ultimi 30 giorni
+        const { data, error } = await supabase
+            .from('registro_presenze')
+            .select('*, personale(nome)')
+            .order('ingresso', { ascending: false });
+        if (data) setAttendanceData(data);
+        if (error) console.error('Error fetching attendance:', error);
+        setAttendanceLoading(false);
+    };
+
+    useEffect(() => {
+        if (activeTab === 'registro') fetchAttendance();
+    }, [activeTab]);
 
     /* ---- Add staff ---- */
     const handleAddStaff = async () => {
@@ -238,12 +254,12 @@ export default function AdminPersonalePage() {
                     </div>
                 )}
                 <div
-                    className={`${styles.tabHeaderBox} ${activeTab === 'analitiche' ? styles.tabHeaderBoxActive : ''}`}
-                    onClick={() => setActiveTab('analitiche')}
+                    className={`${styles.tabHeaderBox} ${activeTab === 'registro' ? styles.tabHeaderBoxActive : ''}`}
+                    onClick={() => setActiveTab('registro')}
                     style={{ flex: 1, cursor: 'pointer', transition: 'all var(--transition-normal)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px' }}
                 >
-                    <h2 style={{ fontSize: '1.4rem' }}>Analitiche</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Heatmap e Trend.</p>
+                    <h2 style={{ fontSize: '1.4rem' }}>Registro Orari</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Registro presenze e bilancio ore.</p>
                 </div>
             </div>
 
@@ -342,10 +358,7 @@ export default function AdminPersonalePage() {
             ) : activeTab === 'offerte' ? (
                 <JobOffersManager />
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    <TableHeatmap />
-                    <SeasonalInsights />
-                </div>
+                <AttendanceRegistry staff={staff} attendance={attendanceData} loading={attendanceLoading} />
             )}
 
             {/* ============ EDIT MODAL ============ */}
@@ -584,3 +597,84 @@ function JobOffersManager() {
         </div>
     );
 }
+
+function AttendanceRegistry({ staff, attendance, loading }: { staff: StaffMember[], attendance: any[], loading: boolean }) {
+    // Calcoliamo il bilancio ore (molto semplificato: ore totali nel registro vs ore settimanali)
+    const calculateBalance = (employeeId: string, weeklyHours: number) => {
+        const empAttendance = attendance.filter(a => a.dipendente_id === employeeId && a.uscita);
+        let totalMinutes = 0;
+        empAttendance.forEach(a => {
+            const start = new Date(a.ingresso).getTime();
+            const end = new Date(a.uscita).getTime();
+            totalMinutes += (end - start) / (1000 * 60);
+        });
+
+        const workedHours = totalMinutes / 60;
+        // Supponiamo che il registro mostri l'ultima settimana per il calcolo del bilancio
+        const balance = workedHours - weeklyHours;
+        return { workedHours, balance };
+    };
+
+    return (
+        <div style={{ marginTop: '24px' }}>
+            <h3 className={styles.formPanelTitle}>Registro Presenze Recenti</h3>
+            <table className={styles.dataTable}>
+                <thead>
+                    <tr>
+                        <th>Dipendente</th>
+                        <th>Data</th>
+                        <th>Ingresso</th>
+                        <th>Uscita</th>
+                        <th>Ore Lavorate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {loading ? (
+                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>Caricamento...</td></tr>
+                    ) : attendance.length === 0 ? (
+                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>Nessun record di presenza trovato.</td></tr>
+                    ) : attendance.map((a) => {
+                        const start = new Date(a.ingresso);
+                        const end = a.uscita ? new Date(a.uscita) : null;
+                        const duration = end ? ((end.getTime() - start.getTime()) / (1000 * 3600)).toFixed(2) : '--';
+                        return (
+                            <tr key={a.id}>
+                                <td>{a.personale?.nome || 'Sconosciuto'}</td>
+                                <td>{new Date(a.data).toLocaleDateString()}</td>
+                                <td>{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                <td>{end ? end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In corso...'}</td>
+                                <td>{duration} h</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+
+            <h3 className={styles.formPanelTitle} style={{ marginTop: '40px' }}>Bilancio Ore Settimanali</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                {staff.map(member => {
+                    const { workedHours, balance } = calculateBalance(member.id, member.oreSettimanali);
+                    const isPositive = balance >= 0;
+                    return (
+                        <div key={member.id} className={styles.formPanel} style={{ margin: 0, padding: '16px', borderLeft: `4px solid ${isPositive ? 'var(--color-success)' : 'var(--color-error)'}` }}>
+                            <h4 style={{ margin: '0 0 8px 0' }}>{member.nome}</h4>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                <p style={{ margin: '4px 0' }}>Ore contrattuali: <strong>{member.oreSettimanali}h</strong></p>
+                                <p style={{ margin: '4px 0' }}>Ore lavorate (registrate): <strong>{workedHours.toFixed(1)}h</strong></p>
+                            </div>
+                            <div style={{
+                                marginTop: '12px',
+                                fontWeight: 700,
+                                fontSize: '1.1rem',
+                                color: isPositive ? 'var(--color-success)' : 'var(--color-error)'
+                            }}>
+                                Bilancio: {isPositive ? '+' : ''}{balance.toFixed(1)}h
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
