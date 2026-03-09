@@ -260,7 +260,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      // ...existing code...
+
     </>
   );
 }

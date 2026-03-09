@@ -4,10 +4,12 @@ import Link from 'next/link';
 import styles from './Footer.module.css';
 import { createClient } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
     const [info, setInfo] = useState<any>(null);
     const supabase = createClient();
+    const pathname = usePathname();
 
     useEffect(() => {
         const fetchInfo = async () => {
@@ -15,7 +17,7 @@ export default function Footer() {
             if (data) setInfo(data);
         };
         fetchInfo();
-    }, [supabase]);
+    }, [supabase, pathname]);
 
     // Defaults
     const phoneDisplay = info?.telefono || "+39 06 1234 5678";
@@ -36,13 +38,29 @@ export default function Footer() {
                 Sab - Dom: 12:00 - 23:30
             </>
         );
-        const { lunedi, venerdi, sabato, domenica } = info.orari;
+        const o = info.orari;
+
+        const formatDayHours = (dayInfo: any) => {
+            if (!dayInfo) return '';
+            let str = '';
+            if (dayInfo.f1?.ok) str += `${dayInfo.f1.a} - ${dayInfo.f1.c}`;
+            if (dayInfo.f2?.ok) {
+                if (str) str += ' / ';
+                str += `${dayInfo.f2.a} - ${dayInfo.f2.c}`;
+            }
+            if (!str) return 'Chiuso';
+            return str;
+        };
+
         return (
             <>
-                Lun - Gio: {lunedi.f1.a} - {lunedi.f1.c} / {lunedi.f2.a} - {lunedi.f2.c}<br />
-                Ven: {venerdi.f1.a} - {venerdi.f1.c} / {venerdi.f2.a} - {venerdi.f2.c}<br />
-                Sab: {sabato.f1.a} - {sabato.f1.c} / {sabato.f2.a} - {sabato.f2.c}<br />
-                Dom: {domenica.tipo === 'continuato' ? `${domenica.f1.a} - ${domenica.f1.c}` : 'Chiuso'}
+                Lun: {formatDayHours(o.lunedi)}<br />
+                Mar: {formatDayHours(o.martedi)}<br />
+                Mer: {formatDayHours(o.mercoledi)}<br />
+                Gio: {formatDayHours(o.giovedi)}<br />
+                Ven: {formatDayHours(o.venerdi)}<br />
+                Sab: {formatDayHours(o.sabato)}<br />
+                Dom: {formatDayHours(o.domenica)}
             </>
         );
     };

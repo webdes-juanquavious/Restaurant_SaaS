@@ -100,10 +100,22 @@ export default function AdminPersonalePage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm('Sei sicuro di voler eliminare questo dipendente?')) {
-            const { error } = await supabase.from('personale').delete().eq('id', id);
-            if (error) alert('Errore eliminazione: ' + error.message);
-            else fetchStaff();
+        if (confirm('Sei sicuro di voler eliminare questo utente in modo permanente?')) {
+            try {
+                const res = await fetch('/api/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: id })
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                    alert('Errore eliminazione utente: ' + (result.error || 'Errore generico'));
+                    return;
+                }
+                fetchStaff();
+            } catch (err: any) {
+                alert('Errore di rete o server durante eliminazione: ' + err.message);
+            }
         }
     };
 
