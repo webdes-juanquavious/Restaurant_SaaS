@@ -73,6 +73,13 @@
 - [x] **Auth Real Life**
     - [x] Migrazione da Mock Login a Supabase Auth
     - [x] Middleware di protezione rotte server-side
+- [x] **Job Offers Management**
+    - [x] Creazione schema `offerte_lavoro`
+    - [x] Implementazione CRUD completo per offerte di lavoro
+    - [x] Integrazione con pagina pubblica `lavora-con-noi`
+    - [x] Gestione attivazione/disattivazione offerte
+    - [x] Fetch active job offers from Supabase
+    - [x] Design a premium UI for potential candidates
 - [ ] **Google Calendar Sync**
     - [ ] Configurazione Google Cloud Console & API Calendars
     - [ ] Sincronizzazione automatica prenotazioni confermate su Calendario Ristorante

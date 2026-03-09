@@ -74,7 +74,13 @@ export default function AdminInformazioniPage() {
                 googleMapsEmbed: data.maps_embed ?? '',
             });
             if (data.orari) setOrari(data.orari);
-            if (data.extra_settings) setExtraSettings(data.extra_settings);
+            if (data.extra_settings) {
+                setExtraSettings(data.extra_settings);
+                if (data.extra_settings.tema) {
+                    setTema(data.extra_settings.tema);
+                    document.documentElement.setAttribute('data-theme', data.extra_settings.tema);
+                }
+            }
         }
     }, [supabase]);
 
@@ -121,9 +127,21 @@ export default function AdminInformazioniPage() {
         else showToast('✅ Impostazioni salvate!', true);
     };
 
-    const handleThemeChange = (newTheme: string) => {
+    const handleThemeChange = async (newTheme: string) => {
         setTema(newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
+
+        // Persist to DB
+        if (dbId) {
+            const updated = { ...extraSettings, tema: newTheme };
+            setExtraSettings(updated);
+            const { error } = await supabase.from('ristorante_info').update({
+                extra_settings: updated
+            }).eq('id', dbId);
+
+            if (error) showToast('Errore salvataggio tema: ' + error.message, false);
+            else showToast('✅ Tema salvato!', true);
+        }
     };
 
     const themes = [

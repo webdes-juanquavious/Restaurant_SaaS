@@ -25,8 +25,12 @@ export default function MenuPage() {
                 .eq('is_active', true);
 
             const { data: infoData } = await supabase.from('ristorante_info').select('extra_settings').single();
-            if (infoData && infoData.extra_settings) {
-                setOrdinaOnlineAttiva(infoData.extra_settings.ordinaOnline !== false);
+            if (infoData?.extra_settings) {
+                // Ensure we handle both absence of key and explicit false
+                const isOnlineActive = infoData.extra_settings.ordinaOnline === true;
+                setOrdinaOnlineAttiva(isOnlineActive);
+            } else {
+                setOrdinaOnlineAttiva(true); // Default to true if no settings found
             }
 
             if (data) {
